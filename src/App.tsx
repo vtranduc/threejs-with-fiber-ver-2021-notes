@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { SetStateAction, useEffect, useRef, useState, Dispatch } from 'react';
 import { Canvas, useFrame, extend, useThree, ReactThreeFiber } from "@react-three/fiber";
 import * as THREE from 'three'
+import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-// import gentilis from './fonts/gentilis_bold.typeface.json'
 import Shelter from './fonts/Shelter_PersonalUseOnly_Regular.json'
 
 extend({ OrbitControls });
@@ -15,6 +15,22 @@ declare global {
   }
 }
 
+extend({ VertexNormalsHelper });
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      vertexNormalsHelper: ReactThreeFiber.Object3DNode<VertexNormalsHelper, typeof VertexNormalsHelper>
+    }
+  }
+}
+
+enum Geometry {
+  Sphere = 'SPHERE',
+  Cube = 'CUBE',
+  Torus = 'TORUS'
+}
+
 const SCENE_CONSTANTS = {
   width: 800,
   height: 500,
@@ -22,8 +38,9 @@ const SCENE_CONSTANTS = {
 }
 
 function App() {
-  const pages = 5
-  const [page, setPage] = useState<number>(4)
+  const pages = 9
+  const [page, setPage] = useState<number>(pages - 2)
+  const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
 
   function displayPage() {
     switch (page) {
@@ -37,6 +54,14 @@ function App() {
         return <SimpleCustomGeo />
       case 4:
         return <SimpleText />
+      case 5:
+        return <SimpleNormal geometry={Geometry.Cube} />
+      case 6:
+        return <SimpleNormal geometry={Geometry.Sphere} />
+      case 7:
+        return <SimpleNormal geometry={Geometry.Torus} />
+      case 8:
+        return <SimpleDepthMaterial setBackgroundColor={setBackgroundColor} />
       default:
         return null
     }
@@ -46,7 +71,7 @@ function App() {
     <>
       <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
       <button onClick={() => setPage((page + 1) % pages)}>Next</button>
-      <SimpleScene >
+      <SimpleScene backgroundColor={backgroundColor} >
         {displayPage()}
       </SimpleScene>
     </>
@@ -54,6 +79,72 @@ function App() {
 }
 
 export default App;
+
+function SimpleDepthMaterial({ setBackgroundColor }: { setBackgroundColor: Dispatch<SetStateAction<number>> }) {
+  const material = new THREE.MeshDepthMaterial()
+
+  useEffect(() => {
+    setBackgroundColor(0xffffff)
+    return () => setBackgroundColor(SCENE_CONSTANTS.backgroundColor)
+  }, [setBackgroundColor])
+
+  function SimpleBoxDepth() {
+    const [add, setAdd] = useState<number>(0.03)
+    const ref = useRef<THREE.Mesh>(new THREE.Mesh())
+    useEffect(() => {
+      ref.current.material = material
+    }, [ref])
+    useFrame(() => {
+      if (ref.current.position.z > 3) setAdd(-Math.abs(add))
+      else if (ref.current.position.z < -8) setAdd(Math.abs(add))
+      ref.current.position.z += add
+    })
+    return <mesh ref={ref} position={[-2.5, 0, -5]}><boxGeometry args={[1.5, 1, 2]} /></mesh>
+  }
+
+  function SimpleSphereDepth() {
+    const [add, setAdd] = useState<number>(-0.03)
+    const ref = useRef<THREE.Mesh>(new THREE.Mesh())
+    useEffect(() => {
+      ref.current.material = material
+    }, [ref])
+    useFrame(() => {
+      if (ref.current.position.z > 3) setAdd(-Math.abs(add))
+      else if (ref.current.position.z < -8) setAdd(Math.abs(add))
+      ref.current.position.z += add
+    })
+    return <mesh ref={ref} position={[2.5, 0, 0]}><sphereGeometry args={[1.5, 30, 30]} /></mesh>
+  }
+
+  return <group><SimpleBoxDepth /><SimpleSphereDepth /></group>
+}
+
+function SimpleNormal({ geometry }: { geometry?: Geometry }) {
+  const mesh = useRef<THREE.Mesh>(new THREE.Mesh())
+  useFrame(() => mesh.current.rotation.x += 0.01)
+  useEffect(() => {
+    if (mesh.current) {
+      mesh.current.rotation.x = 0
+      const vNormals = new VertexNormalsHelper(mesh.current, 0.3, 0xbabbbb)
+      while (mesh.current.children.length) mesh.current.remove(mesh.current.children[0])
+      mesh.current.add(vNormals)
+      const wireframe = new THREE.WireframeGeometry(mesh.current.geometry)
+      const frame = new THREE.LineSegments(wireframe)
+      mesh.current.add(frame)
+    }
+  }, [mesh, geometry])
+  function getGeo() {
+    switch (geometry) {
+      case Geometry.Sphere:
+        return <sphereGeometry args={[1, 10, 10]} />
+      case Geometry.Torus:
+        return <torusGeometry args={[1, 0.3, 10, 12]} />
+      default:
+        return <boxGeometry args={[1, 1, 1]} />
+    }
+  }
+  return <mesh ref={mesh}>{getGeo()}<meshNormalMaterial /></mesh>
+}
 
 function SimpleText() {
   const mesh = useRef<THREE.Mesh>(new THREE.Mesh())
@@ -75,17 +166,17 @@ function SimpleText() {
 }
 
 function SimpleCustomGeo() {
-  const v0Limit = 6
+  const v0Limit = 3
   const [add, setAdd] = useState<number>(0.05)
   const [v0Comp, setV0Comp] = useState<number>(0)
   const mesh = useRef<THREE.Mesh>(new THREE.Mesh())
   const geometry = useRef<THREE.BufferGeometry>(null)
   useEffect(() => {
     if (geometry.current) {
-      const v0 = [3, v0Comp, 0]
-      const v1 = [0, 5, 0]
-      const v2 = [0, 0, 2]
-      const v3 = [1, 2, -2]
+      const v0 = [1.5, v0Comp, 0]
+      const v1 = [0, 2.5, 0]
+      const v2 = [0, 0, 1]
+      const v3 = [0.5, 1, -1]
       const vertices = new Float32Array([
         ...v0, ...v1, ...v2,
         ...v1, ...v2, ...v3,
@@ -154,9 +245,10 @@ function getCamera() {
   return camera
 }
 
-function SimpleScene({ children }: {
+function SimpleScene({ children, backgroundColor }: {
   children?: React.ReactChild
   | React.ReactChild[] | null;
+  backgroundColor: number
 }) {
   const camera2 = getCamera()
   const gridProperties = { size: 10, divisions: 50 }
@@ -165,7 +257,7 @@ function SimpleScene({ children }: {
       <Canvas camera={camera2}>
         <CameraControls />
         <gridHelper args={[gridProperties.size, gridProperties.divisions]} />
-        <color attach="background" args={[SCENE_CONSTANTS.backgroundColor]} />
+        <color attach="background" args={[backgroundColor]} />
         {children}
       </Canvas>
     </div>
