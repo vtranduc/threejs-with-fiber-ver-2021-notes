@@ -1,11 +1,13 @@
-import React, { SetStateAction, useEffect, useRef, useState, Dispatch, useMemo } from 'react';
-import { Canvas, useFrame, extend, useThree, ReactThreeFiber } from "@react-three/fiber";
+import React, { SetStateAction, useEffect, useRef, useState, Dispatch, useMemo, Suspense } from 'react';
+import { Canvas, useFrame, extend, useThree, ReactThreeFiber, useLoader } from "@react-three/fiber";
 import * as THREE from 'three'
 import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Shelter from './fonts/Shelter_PersonalUseOnly_Regular.json'
 import TWEEN from '@tweenjs/tween.js'
 import { PerspectiveCamera, OrthographicCamera, useHelper } from '@react-three/drei'
+import { hexToRgb, rgbToHex } from './utils'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
@@ -55,43 +57,8 @@ const SCENE_CONSTANTS = {
   isOrthographic: false
 }
 
-function hexToRgb(hex: number) {
-  return hexStrToRgb(hexNumToStr(hex))
-
-  function hexNumToStr(num: number) {
-    let str = num.toString(16)
-    while (str.length < 6) str = '0' + str
-    return '#' + str
-  }
-
-  function hexStrToRgb(hex: string) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 255, g: 255, b: 255 };
-  }
-}
-
-function rgbToHex(r: number, g: number, b: number) {
-  return hexStrToNum(rgbToHexStr(Math.round(r), Math.round(g), Math.round(b)))
-
-  function hexStrToNum(hex: string) {
-    return parseInt("0x" + hex.slice(1))
-  }
-
-  function rgbToHexStr(r: number, g: number, b: number) {
-    function componentToHex(c: number) {
-      const hex = c.toString(16);
-      return hex.length === 1 ? "0" + hex : hex;
-    }
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-  }
-}
-
 function App() {
-  const pages = 30
+  const pages = 32
   const [page, setPage] = useState<number>(pages - 1)
   const [showGrid, setShowGrid] = useState<boolean>(SCENE_CONSTANTS.showGrid)
   const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
@@ -159,22 +126,70 @@ function App() {
         return <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Move} />
       case 29:
         return <SimpleOrthographicCamera {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }} />
+      case 30:
+        return <SimpleKeyboardEvent />
+      case 31:
+        return <SimpleFBXLoader />
       default:
         return null
     }
   }
 
-  return (
-    <>
-      <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
-      <button onClick={() => setPage((page + 1) % pages)}>Next</button>
-      <label>{page}</label>
-      <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>{displayPage()}</SimpleScene>
-    </>
+  return (<>
+    <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
+    <button onClick={() => setPage((page + 1) % pages)}>Next</button>
+    <label>{page}</label>
+    <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>{displayPage()}</SimpleScene>
+  </>
   );
 }
 
 export default App;
+
+function SimpleFBXLoader() {
+  function OfficeChair() {
+    const fbx = useLoader(FBXLoader, 'models/office-chair.fbx', undefined, onProgress)
+    function onProgress(progressEvent: ProgressEvent<EventTarget>) {
+      console.log('Model load progress: ', Math.round(progressEvent.loaded / progressEvent.total * 100), '%')
+    }
+    useEffect(() => {
+      console.log('Model has been loaded!')
+    }, [fbx])
+
+    return <mesh><primitive object={fbx} dispose={null} /></mesh>
+  }
+  return <Suspense fallback={<></>}><directionalLight /><OfficeChair /></Suspense>
+}
+
+/**
+ * 37 = left, 38 = up, 39 = right, 40 = down, 32 = space, 13 = enter
+ * @returns 
+ */
+
+function SimpleKeyboardEvent() {
+  const cubeGroup = useRef<THREE.Group>(null)
+
+  useEffect(() => {
+    const currentCubes = cubeGroup.current
+    if (!currentCubes) return
+    const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5)
+    const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff, shininess: 100, side: THREE.DoubleSide })
+    const cubeModel = new THREE.Mesh(geometry, material)
+    for (let i = 1; i <= 10; i++) {
+      const cube = cubeModel.clone()
+      cube.position.x = randomInRange(-10, 10)
+      cube.position.z = randomInRange(-10, 10)
+      currentCubes.add(cube)
+    }
+    return () => { while (currentCubes.children.length) currentCubes.remove(currentCubes.children[0]) }
+  }, [cubeGroup])
+
+  function randomInRange(from: number, to: number) {
+    return Math.random() * (to - from) + from
+  }
+
+  return <group ref={cubeGroup} />
+}
 
 function SimpleOrthographicCamera({ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }: {
   setBackgroundColor: Dispatch<SetStateAction<number>>,
@@ -257,7 +272,7 @@ function SimplePerspectiveCamera({ animate }: { animate?: AnimatePerspectiveCame
         const r = 10
         camera.position.x = r * Math.cos(theta)
         camera.position.z = r * Math.sin(theta)
-        setTheta(theta + 0.00)
+        setTheta(theta + 0.001)
         break
       default:
     }
