@@ -178,6 +178,11 @@ function SimpleKeyboardEvent() {
 
 function SimpleOBJLoader() {
   const light = useRef<THREE.DirectionalLight>(new THREE.DirectionalLight())
+  const frontLightTarget = useMemo(() => {
+    const target = new THREE.Object3D()
+    target.position.set(0, 2, 0)
+    return target
+  }, [])
 
   useHelper(light, THREE.DirectionalLightHelper)
 
@@ -196,7 +201,7 @@ function SimpleOBJLoader() {
     const bodyTexture = useLoader(TextureLoader, 'models/sketch/texture/body.png')
     const headTexture = useLoader(TextureLoader, 'models/sketch/texture/head.png')
     const materials = useMemo(() => {
-      const skinColor = 0xffe6cc
+      const skinColor = 0xfff3e6
       return [
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.DoubleSide }), // hair
         null, // Hair but no provided texture fits
@@ -245,6 +250,7 @@ function SimpleOBJLoader() {
 
   return <>
     <directionalLight ref={light} position={[0, 10, 10]} castShadow />
+    <directionalLight position={[0, 0, 3]} intensity={0.4} target={frontLightTarget} />
     <ambientLight intensity={0.1} />
     <Suspense fallback={<></>}><Faerie /></Suspense>
   </>
