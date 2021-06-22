@@ -10,6 +10,7 @@ import { hexToRgb, rgbToHex, atan } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import { MeshPhongMaterial, TextureLoader } from 'three';
+
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
 declare global {
@@ -180,7 +181,7 @@ function SimpleOBJLoader() {
   const light = useRef<THREE.DirectionalLight>(new THREE.DirectionalLight())
   const frontLightTarget = useMemo(() => {
     const target = new THREE.Object3D()
-    target.position.set(0, 2, 0)
+    target.position.set(0, 3, 0)
     return target
   }, [])
 
@@ -194,7 +195,7 @@ function SimpleOBJLoader() {
   })
 
   function Faerie() {
-    const maxDim = 2
+    const maxDim = 3
     const obj = useLoader(OBJLoader, 'models/sketch/final_v01.obj', undefined, onProgress)
     const boundingBox = useMemo(() => new THREE.Box3().setFromObject(obj), [obj])
     const allTexture = useLoader(TextureLoader, 'models/sketch/texture/all.png')
@@ -202,11 +203,12 @@ function SimpleOBJLoader() {
     const headTexture = useLoader(TextureLoader, 'models/sketch/texture/head.png')
     const materials = useMemo(() => {
       const skinColor = 0xfff3e6
+      const faceSkinColor = 0xffce99
       return [
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.DoubleSide }), // hair
         null, // Hair but no provided texture fits
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.FrontSide }), // Eyes and face skin
-        new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Face skin (no eyes and glasses)
+        new THREE.MeshPhysicalMaterial({ color: faceSkinColor, map: allTexture, side: THREE.BackSide }), // Face skin (no eyes and glasses)
         new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.FrontSide }), // Body including cloth and skirt
         new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.BackSide }), // Cloth and skirt
         new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Body excluding cloth and skirt
@@ -250,7 +252,7 @@ function SimpleOBJLoader() {
 
   return <>
     <directionalLight ref={light} position={[0, 10, 10]} castShadow />
-    <directionalLight position={[0, 0, 3]} intensity={0.4} target={frontLightTarget} />
+    <directionalLight position={[0, 0, 5]} intensity={0.4} target={frontLightTarget} />
     <ambientLight intensity={0.1} />
     <Suspense fallback={<></>}><Faerie /></Suspense>
   </>
