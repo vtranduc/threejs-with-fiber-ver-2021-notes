@@ -32,3 +32,14 @@ export function rgbToHex(r: number, g: number, b: number) {
         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
     }
 }
+
+export function atan(x: number, y: number) {
+    if (x === 0) {
+        if (y >= 0) return Math.PI / 2
+        else return Math.PI * 3 / 2
+    }
+    const division = y / x
+    const looseTheta = Math.atan(division)
+    if (x >= 0) return looseTheta
+    else return looseTheta + Math.PI
+}

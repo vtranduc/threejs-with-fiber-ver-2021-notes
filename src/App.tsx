@@ -1,4 +1,4 @@
-import React, { SetStateAction, useEffect, useRef, useState, Dispatch, useMemo, Suspense } from 'react';
+import React, { SetStateAction, useEffect, useState, Dispatch, useMemo, Suspense, useRef } from 'react';
 import { Canvas, useFrame, extend, useThree, ReactThreeFiber, useLoader } from "@react-three/fiber";
 import * as THREE from 'three'
 import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
@@ -6,9 +6,10 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Shelter from './fonts/Shelter_PersonalUseOnly_Regular.json'
 import TWEEN from '@tweenjs/tween.js'
 import { PerspectiveCamera, OrthographicCamera, useHelper } from '@react-three/drei'
-import { hexToRgb, rgbToHex } from './utils'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-
+import { hexToRgb, rgbToHex, atan } from './utils'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+import { ErrorBoundary } from 'react-error-boundary'
+import { MeshPhongMaterial, TextureLoader } from 'three';
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
 declare global {
@@ -58,7 +59,7 @@ const SCENE_CONSTANTS = {
 }
 
 function App() {
-  const pages = 32
+  const pages = 34
   const [page, setPage] = useState<number>(pages - 1)
   const [showGrid, setShowGrid] = useState<boolean>(SCENE_CONSTANTS.showGrid)
   const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
@@ -127,9 +128,13 @@ function App() {
       case 29:
         return <SimpleOrthographicCamera {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }} />
       case 30:
-        return <SimpleKeyboardEvent />
+        return <SimpleTexture />
       case 31:
-        return <SimpleFBXLoader />
+        return <SimpleTextureWithMaterialIndex />
+      case 32:
+        return <SimpleOBJLoader />
+      case 33:
+        return <SimpleKeyboardEvent />
       default:
         return null
     }
@@ -145,26 +150,6 @@ function App() {
 }
 
 export default App;
-
-function SimpleFBXLoader() {
-  function OfficeChair() {
-    const fbx = useLoader(FBXLoader, 'models/office-chair.fbx', undefined, onProgress)
-    function onProgress(progressEvent: ProgressEvent<EventTarget>) {
-      console.log('Model load progress: ', Math.round(progressEvent.loaded / progressEvent.total * 100), '%')
-    }
-    useEffect(() => {
-      console.log('Model has been loaded!')
-    }, [fbx])
-
-    return <mesh><primitive object={fbx} dispose={null} /></mesh>
-  }
-  return <Suspense fallback={<></>}><directionalLight /><OfficeChair /></Suspense>
-}
-
-/**
- * 37 = left, 38 = up, 39 = right, 40 = down, 32 = space, 13 = enter
- * @returns 
- */
 
 function SimpleKeyboardEvent() {
   const cubeGroup = useRef<THREE.Group>(null)
@@ -189,6 +174,158 @@ function SimpleKeyboardEvent() {
   }
 
   return <group ref={cubeGroup} />
+}
+
+function SimpleOBJLoader() {
+  const light = useRef<THREE.DirectionalLight>(new THREE.DirectionalLight())
+
+  useHelper(light, THREE.DirectionalLightHelper)
+
+  useFrame(() => {
+    const r = 10
+    const theta = atan(light.current.position.x, light.current.position.z) + 0.01
+    light.current.position.x = r * Math.cos(theta)
+    light.current.position.z = r * Math.sin(theta)
+  })
+
+  function Faerie() {
+    const maxDim = 2
+    const obj = useLoader(OBJLoader, 'models/sketch/final_v01.obj', undefined, onProgress)
+    const boundingBox = useMemo(() => new THREE.Box3().setFromObject(obj), [obj])
+    const allTexture = useLoader(TextureLoader, 'models/sketch/texture/all.png')
+    const bodyTexture = useLoader(TextureLoader, 'models/sketch/texture/body.png')
+    const headTexture = useLoader(TextureLoader, 'models/sketch/texture/head.png')
+    const materials = useMemo(() => {
+      const skinColor = 0xffe6cc
+      return [
+        new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.DoubleSide }), // hair
+        null, // Hair but no provided texture fits
+        new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.FrontSide }), // Eyes and face skin
+        new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Face skin (no eyes and glasses)
+        new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.FrontSide }), // Body including cloth and skirt
+        new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.BackSide }), // Cloth and skirt
+        new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Body excluding cloth and skirt
+        new THREE.MeshPhysicalMaterial({ map: allTexture, side: THREE.FrontSide }) // All surroundings
+      ]
+    }, [allTexture, bodyTexture, headTexture])
+
+    function onProgress(progressEvent: ProgressEvent<EventTarget>) {
+      console.log('Model load progress: ', Math.round(progressEvent.loaded / progressEvent.total * 100), '%')
+    }
+
+    useEffect(() => {
+      adjustSizeAndCenter()
+      applyFaerieMaterials()
+      boundingBox.setFromObject(obj)
+
+      function adjustSizeAndCenter() {
+        const bbox = new THREE.Box3().setFromObject(obj)
+        const size = bbox.getSize(new THREE.Vector3())
+        const maxBoundingBoxDim = Math.max(...size.toArray())
+        obj.scale.multiplyScalar(maxDim / maxBoundingBoxDim)
+        bbox.setFromObject(obj)
+        const shift = bbox.getCenter(new THREE.Vector3())
+        obj.position.sub(shift)
+        obj.position.y += bbox.getSize(new THREE.Vector3()).y / 2
+      }
+
+      function applyFaerieMaterials() {
+        obj.children.forEach((obj, i) => {
+          if (obj instanceof THREE.Mesh && materials[i]) {
+            obj.material = materials[i]
+            obj.receiveShadow = true
+            obj.castShadow = true
+          }
+        })
+      }
+    }, [obj, boundingBox, materials])
+
+    return <><box3Helper args={[boundingBox]} /><mesh><primitive object={obj} dispose={null} /></mesh></>
+  }
+
+  return <>
+    <directionalLight ref={light} position={[0, 10, 10]} castShadow />
+    <ambientLight intensity={0.1} />
+    <Suspense fallback={<></>}><Faerie /></Suspense>
+  </>
+}
+
+/**
+ * 37 = left, 38 = up, 39 = right, 40 = down, 32 = space, 13 = enter
+ * @returns 
+ */
+
+interface Roll {
+  time: number,
+  roll: number
+}
+
+function SimpleTextureWithMaterialIndex() {
+  function Dice() {
+    const dice = useRef<THREE.Mesh>()
+    const [roll, setRoll] = useState<Roll | null>(null)
+
+    const face1 = useLoader(THREE.TextureLoader, 'models/dice/1.jpeg')
+    const face2 = useLoader(THREE.TextureLoader, 'models/dice/2.jpeg')
+    const face3 = useLoader(THREE.TextureLoader, 'models/dice/3.jpeg')
+    const face4 = useLoader(THREE.TextureLoader, 'models/dice/4.jpeg')
+    const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
+    const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
+
+    const materials = useMemo(() => [
+      new MeshPhongMaterial({ map: face1 }), new MeshPhongMaterial({ map: face2 }),
+      new MeshPhongMaterial({ map: face3 }), new MeshPhongMaterial({ map: face4 }),
+      new MeshPhongMaterial({ map: face5 }), new MeshPhongMaterial({ map: face6 })
+    ], [face1, face2, face3, face4, face5, face6])
+
+    useEffect(() => {
+      if (!dice.current) return
+      dice.current.material = materials
+      dice.current.geometry.groups.forEach(group => group.materialIndex = 2)
+    }, [dice, materials])
+
+    useEffect(() => {
+      if (!roll || !dice.current) return
+      dice.current.geometry.groups.forEach(group => group.materialIndex = roll.roll)
+    }, [dice, roll])
+
+    useFrame(({ clock }) => {
+      if (!roll) setRoll({ time: clock.elapsedTime, roll: 0 })
+      else if (clock.elapsedTime - roll.time >= 0.5) setRoll({ time: clock.elapsedTime, roll: (roll.roll + 1) % 6 })
+    })
+
+    return <mesh ref={dice}><boxGeometry args={[1, 1, 1]} /></mesh>
+  }
+
+  return <>
+    <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+    <ambientLight intensity={0.5} />
+    <Suspense fallback={null}><Dice /></Suspense>
+  </>
+}
+
+function SimpleTexture() {
+  function Dice() {
+    const face1 = useLoader(THREE.TextureLoader, 'models/dice/1.jpeg')
+    const face2 = useLoader(THREE.TextureLoader, 'models/dice/2.jpeg')
+    const face3 = useLoader(THREE.TextureLoader, 'models/dice/3.jpeg')
+    const face4 = useLoader(THREE.TextureLoader, 'models/dice/4.jpeg')
+    const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
+    const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
+    return <mesh rotation={[Math.PI / 4, Math.PI / 4, Math.PI / 4]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial map={face1} attachArray='material' />
+      <meshStandardMaterial map={face2} attachArray='material' />
+      <meshStandardMaterial map={face3} attachArray='material' />
+      <meshStandardMaterial map={face4} attachArray='material' />
+      <meshStandardMaterial map={face5} attachArray='material' />
+      <meshStandardMaterial map={face6} attachArray='material' />
+    </mesh>
+  }
+  return <>
+    <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+    <Suspense fallback={null}><Dice /></Suspense>
+  </>
 }
 
 function SimpleOrthographicCamera({ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }: {
@@ -874,18 +1011,31 @@ function SimpleScene({ children, showGrid, backgroundColor, isOrthographic }: {
   }, [perspectiveCamera])
   return (
     <div style={{ width: SCENE_CONSTANTS.width, height: SCENE_CONSTANTS.height }}>
-      <Canvas>
-        <PerspectiveCamera ref={perspectiveCamera} args={[SCENE_CONSTANTS.fov,
-        SCENE_CONSTANTS.width / SCENE_CONSTANTS.height, 1, 1000]}
-          position={SCENE_CONSTANTS.cameraPosition.toArray()}
-          makeDefault={!isOrthographic}
-        />
-        <OrthographicCamera args={[-300, 300, 400, -400, 1, 1000]} zoom={5} makeDefault={isOrthographic} />
-        <CameraControls />
-        {showGrid && <gridHelper args={[gridProperties.size, gridProperties.divisions]} />}
-        <color attach="background" args={[backgroundColor]} />
-        {children}
-      </Canvas>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <Canvas shadows>
+          <PerspectiveCamera ref={perspectiveCamera} args={[SCENE_CONSTANTS.fov,
+          SCENE_CONSTANTS.width / SCENE_CONSTANTS.height, 1, 1000]}
+            position={SCENE_CONSTANTS.cameraPosition.toArray()}
+            makeDefault={!isOrthographic}
+          />
+          <OrthographicCamera args={[-300, 300, 400, -400, 1, 1000]} zoom={5} makeDefault={isOrthographic} />
+          <CameraControls />
+          {showGrid && <gridHelper args={[gridProperties.size, gridProperties.divisions]} />}
+          <color attach="background" args={[backgroundColor]} />
+          {children}
+        </Canvas>
+      </ErrorBoundary>
+    </div>
+  )
+}
+
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error, resetErrorBoundary: () => void }) {
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <pre>{error.message}</pre>
+      <p>Suggestion: Select different page then try again? Maybe other pages are fine</p>
+      <button onClick={resetErrorBoundary}>Try again</button>
     </div>
   )
 }
