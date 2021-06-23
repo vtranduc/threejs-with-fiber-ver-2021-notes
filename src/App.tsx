@@ -210,7 +210,7 @@ function SimpleOBJLoader() {
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.FrontSide }), // Eyes and face skin
         new THREE.MeshPhysicalMaterial({ color: faceSkinColor, map: allTexture, side: THREE.BackSide }), // Face skin (no eyes and glasses)
         new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.FrontSide }), // Body including cloth and skirt
-        new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.BackSide }), // Cloth and skirt
+        new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.DoubleSide }), // Cloth and skirt
         new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Body excluding cloth and skirt
         new THREE.MeshPhysicalMaterial({ map: allTexture, side: THREE.FrontSide }) // All surroundings
       ]
