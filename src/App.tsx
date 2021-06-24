@@ -60,7 +60,7 @@ const SCENE_CONSTANTS = {
 }
 
 function App() {
-  const pages = 34
+  const pages = 35
   const [page, setPage] = useState<number>(pages - 1)
   const [showGrid, setShowGrid] = useState<boolean>(SCENE_CONSTANTS.showGrid)
   const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
@@ -136,6 +136,8 @@ function App() {
         return <SimpleOBJLoader />
       case 33:
         return <SimpleKeyboardEvent />
+      case 34:
+        return <SimpleShadow />
       default:
         return null
     }
@@ -151,6 +153,35 @@ function App() {
 }
 
 export default App;
+
+function SimpleShadow() {
+  const { gl } = useThree()
+  const material = useMemo(() =>
+    new THREE.MeshPhongMaterial({ color: 0xdff913, shininess: 100, side: THREE.DoubleSide }), [])
+
+  useEffect(() => {
+    const originalShadowMapType = gl.shadowMap.type
+    gl.shadowMap.type = THREE.PCFShadowMap
+    return () => {
+      gl.shadowMap.type = originalShadowMapType
+    }
+  }, [gl])
+
+  return <>
+    <spotLight args={[0xffffff, 1]} position={[0, 7.5, 5]}
+      angle={Math.PI / 2} penumbra={0.05} decay={2} distance={200} />
+    <mesh position={[2.5, 1, 0]} material={material}>
+      <boxGeometry args={[2.5, 2.5, 2.5]} />
+    </mesh>
+    <mesh position={[-2, 1, 0]} material={material}>
+      <boxGeometry args={[2.5, 3, 2]} />
+    </mesh>
+    <mesh position={[0, -0.5, 0]}>
+      <boxGeometry args={[1000, 0.5, 1000]} />
+      <meshPhongMaterial color={0x693421} side={THREE.DoubleSide} />
+    </mesh>
+  </>
+}
 
 function SimpleKeyboardEvent() {
   const cubeGroup = useRef<THREE.Group>(null)
@@ -223,7 +254,7 @@ function SimpleOBJLoader() {
     useEffect(() => {
       adjustSizeAndCenter()
       applyFaerieMaterials()
-      boundingBox.setFromObject(obj)
+      updateBoundingBox()
 
       function adjustSizeAndCenter() {
         const bbox = new THREE.Box3().setFromObject(obj)
@@ -244,6 +275,10 @@ function SimpleOBJLoader() {
             obj.castShadow = true
           }
         })
+      }
+
+      function updateBoundingBox() {
+        boundingBox.setFromObject(obj)
       }
     }, [obj, boundingBox, materials])
 
