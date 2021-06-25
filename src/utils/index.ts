@@ -43,3 +43,7 @@ export function atan(x: number, y: number) {
     if (x >= 0) return looseTheta
     else return looseTheta + Math.PI
 }
+
+export function randomInRange(from: number, to: number) {
+    return Math.random() * (to - from) + from
+}

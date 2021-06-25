@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Shelter from './fonts/Shelter_PersonalUseOnly_Regular.json'
 import TWEEN from '@tweenjs/tween.js'
 import { PerspectiveCamera, OrthographicCamera, useHelper } from '@react-three/drei'
-import { hexToRgb, rgbToHex, atan } from './utils'
+import { hexToRgb, rgbToHex, atan, randomInRange } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import { MeshPhongMaterial, TextureLoader } from 'three';
@@ -56,11 +56,12 @@ const SCENE_CONSTANTS = {
   fov: 30,
   cameraPosition: new THREE.Vector3(0, 10, 10),
   cameraLookAt: new THREE.Vector3(0, 0, 0),
-  isOrthographic: false
+  isOrthographic: false,
+  shadows: false
 }
 
 function App() {
-  const pages = 35
+  const pages = 36
   const [page, setPage] = useState<number>(pages - 1)
   const [showGrid, setShowGrid] = useState<boolean>(SCENE_CONSTANTS.showGrid)
   const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
@@ -138,45 +139,172 @@ function App() {
         return <SimpleKeyboardEvent />
       case 34:
         return <SimpleShadow />
+      case 35:
+        return <SimpleBufferGeometryBox />
       default:
         return null
     }
   }
 
-  return (<>
+  return <>
     <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
     <button onClick={() => setPage((page + 1) % pages)}>Next</button>
     <label>{page}</label>
     <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>{displayPage()}</SimpleScene>
   </>
-  );
 }
 
 export default App;
 
+function SimpleBufferGeometryBox() {
+  const target = useMemo(() => {
+    const obj = new THREE.Object3D()
+    obj.position.set(0, 0, 0)
+    return obj
+  }, [])
+
+  function Dice() {
+    const geometry = useMemo(() => {
+      const vertices = [
+        // front
+        { pos: [-1, -1, 1], norm: [0, 0, 1], uv: [0, 0], }, // 0
+        { pos: [1, -1, 1], norm: [0, 0, 1], uv: [1, 0], }, // 1
+        { pos: [-1, 1, 1], norm: [0, 0, 1], uv: [0, 1], }, // 2
+
+        // { pos: [-1, 1, 1], norm: [0, 0, 1], uv: [0, 1], },
+        // { pos: [1, -1, 1], norm: [0, 0, 1], uv: [1, 0], },
+        { pos: [1, 1, 1], norm: [0, 0, 1], uv: [1, 1], }, // 3
+        // right
+        { pos: [1, -1, 1], norm: [1, 0, 0], uv: [0, 0], }, // 4
+        { pos: [1, -1, -1], norm: [1, 0, 0], uv: [1, 0], }, // 5
+
+        // { pos: [1, 1, 1], norm: [1, 0, 0], uv: [0, 1], },
+        // { pos: [1, -1, -1], norm: [1, 0, 0], uv: [1, 0], },
+        { pos: [1, 1, 1], norm: [1, 0, 0], uv: [0, 1], }, // 6
+        { pos: [1, 1, -1], norm: [1, 0, 0], uv: [1, 1], }, // 7
+        // back
+        { pos: [1, -1, -1], norm: [0, 0, -1], uv: [0, 0], }, // 8
+        { pos: [-1, -1, -1], norm: [0, 0, -1], uv: [1, 0], }, // 9
+
+        // { pos: [1, 1, -1], norm: [0, 0, -1], uv: [0, 1], },
+        // { pos: [-1, -1, -1], norm: [0, 0, -1], uv: [1, 0], },
+        { pos: [1, 1, -1], norm: [0, 0, -1], uv: [0, 1], }, // 10
+        { pos: [-1, 1, -1], norm: [0, 0, -1], uv: [1, 1], }, // 11
+        // left
+        { pos: [-1, -1, -1], norm: [-1, 0, 0], uv: [0, 0], }, // 12
+        { pos: [-1, -1, 1], norm: [-1, 0, 0], uv: [1, 0], }, // 13
+
+        // { pos: [-1, 1, -1], norm: [-1, 0, 0], uv: [0, 1], },
+        // { pos: [-1, -1, 1], norm: [-1, 0, 0], uv: [1, 0], },
+        { pos: [-1, 1, -1], norm: [-1, 0, 0], uv: [0, 1], }, // 14
+        { pos: [-1, 1, 1], norm: [-1, 0, 0], uv: [1, 1], }, // 15
+        // top
+        { pos: [1, 1, -1], norm: [0, 1, 0], uv: [0, 0], }, // 16
+        { pos: [-1, 1, -1], norm: [0, 1, 0], uv: [1, 0], }, // 17
+
+        // { pos: [1, 1, 1], norm: [0, 1, 0], uv: [0, 1], },
+        // { pos: [-1, 1, -1], norm: [0, 1, 0], uv: [1, 0], },
+        { pos: [1, 1, 1], norm: [0, 1, 0], uv: [0, 1], }, // 18
+        { pos: [-1, 1, 1], norm: [0, 1, 0], uv: [1, 1], }, // 19
+        // bottom
+        { pos: [1, -1, 1], norm: [0, -1, 0], uv: [0, 0], }, // 20
+        { pos: [-1, -1, 1], norm: [0, -1, 0], uv: [1, 0], }, // 21
+
+        // { pos: [1, -1, -1], norm: [0, -1, 0], uv: [0, 1], },
+        // { pos: [-1, -1, 1], norm: [0, -1, 0], uv: [1, 0], },
+        { pos: [1, -1, -1], norm: [0, -1, 0], uv: [0, 1], }, // 22
+        { pos: [-1, -1, -1], norm: [0, -1, 0], uv: [1, 1], }, // 23
+      ]
+
+      const nVertices = vertices.length
+      const nPosComps = 3
+      const nNormComps = 3
+      const nUVComps = 2
+
+      const pos = new Float32Array(nVertices * nPosComps)
+      const norm = new Float32Array(nVertices * nNormComps)
+      const uv = new Float32Array(nVertices * nUVComps)
+
+      vertices.forEach((vertex, i) => {
+        pos.set(vertex.pos, i * nPosComps)
+        norm.set(vertex.norm, i * nNormComps)
+        uv.set(vertex.uv, i * nUVComps)
+      })
+
+      const geo = new THREE.BufferGeometry()
+
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, nPosComps))
+      geo.setAttribute('normal', new THREE.BufferAttribute(norm, nNormComps))
+      geo.setAttribute('uv', new THREE.BufferAttribute(uv, nUVComps))
+
+      geo.setIndex([
+        0, 1, 2, 2, 1, 3,  // front
+        4, 5, 6, 6, 5, 7,  // right
+        8, 9, 10, 10, 9, 11,  // back
+        12, 13, 14, 14, 13, 15,  // left
+        16, 17, 18, 18, 17, 19,  // top
+        20, 21, 22, 22, 21, 23,  // bottom
+      ])
+
+      for (let i = 0; i < 6; i++) { geo.addGroup(i * 6, 6, i) }
+
+      return geo
+    }, [])
+
+    const face1 = useLoader(THREE.TextureLoader, 'models/dice/1.jpeg')
+    const face2 = useLoader(THREE.TextureLoader, 'models/dice/2.jpeg')
+    const face3 = useLoader(THREE.TextureLoader, 'models/dice/3.jpeg')
+    const face4 = useLoader(THREE.TextureLoader, 'models/dice/4.jpeg')
+    const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
+    const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
+
+    const material = useMemo(() => [
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face1 }),
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face2 }),
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face3 }),
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face4 }),
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face5 }),
+      new THREE.MeshPhongMaterial({ shininess: 100, map: face6 })
+    ], [face1, face2, face3, face4, face5, face6])
+
+    return <mesh geometry={geometry} material={material} />
+  }
+
+  return <>
+    <spotLight position={[2, 3, 5]} target={target} />
+    <ambientLight intensity={0.1} />
+    <Suspense fallback={null}><Dice /></Suspense>
+  </>
+}
+
 function SimpleShadow() {
+  const spotLight = useRef<THREE.SpotLight>()
   const { gl } = useThree()
   const material = useMemo(() =>
     new THREE.MeshPhongMaterial({ color: 0xdff913, shininess: 100, side: THREE.DoubleSide }), [])
 
+  useHelper(spotLight, THREE.SpotLightHelper)
+
   useEffect(() => {
     const originalShadowMapType = gl.shadowMap.type
     gl.shadowMap.type = THREE.PCFShadowMap
+    gl.shadowMap.enabled = true
     return () => {
       gl.shadowMap.type = originalShadowMapType
+      gl.shadowMap.enabled = SCENE_CONSTANTS.shadows
     }
   }, [gl])
 
   return <>
-    <spotLight args={[0xffffff, 1]} position={[0, 7.5, 5]}
-      angle={Math.PI / 2} penumbra={0.05} decay={2} distance={200} />
-    <mesh position={[2.5, 1, 0]} material={material}>
+    <spotLight ref={spotLight} castShadow position={[0, 7.5, 5]} angle={Math.PI / 4}
+      penumbra={0.05} decay={2} distance={200} />
+    <mesh castShadow receiveShadow position={[2.5, 1, 0]} material={material}>
       <boxGeometry args={[2.5, 2.5, 2.5]} />
     </mesh>
     <mesh position={[-2, 1, 0]} material={material}>
       <boxGeometry args={[2.5, 3, 2]} />
     </mesh>
-    <mesh position={[0, -0.5, 0]}>
+    <mesh receiveShadow position={[0, -0.5, 0]}>
       <boxGeometry args={[1000, 0.5, 1000]} />
       <meshPhongMaterial color={0x693421} side={THREE.DoubleSide} />
     </mesh>
@@ -185,31 +313,31 @@ function SimpleShadow() {
 
 function SimpleKeyboardEvent() {
   const cubeGroup = useRef<THREE.Group>(null)
+  const cubeModel = useMemo(() => {
+    const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5)
+    const material = new THREE.MeshPhongMaterial({ shininess: 100, side: THREE.DoubleSide })
+    return new THREE.Mesh(geometry, material)
+  }, [])
 
   useEffect(() => {
     const currentCubes = cubeGroup.current
     if (!currentCubes) return
-    const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5)
-    const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff, shininess: 100, side: THREE.DoubleSide })
-    const cubeModel = new THREE.Mesh(geometry, material)
     for (let i = 1; i <= 10; i++) {
       const cube = cubeModel.clone()
       cube.position.x = randomInRange(-10, 10)
       cube.position.z = randomInRange(-10, 10)
+      cube.material.color = new THREE.Color(Math.random() * 0xffffff)
       currentCubes.add(cube)
     }
     return () => { while (currentCubes.children.length) currentCubes.remove(currentCubes.children[0]) }
-  }, [cubeGroup])
-
-  function randomInRange(from: number, to: number) {
-    return Math.random() * (to - from) + from
-  }
+  }, [cubeGroup, cubeModel])
 
   return <group ref={cubeGroup} />
 }
 
 function SimpleOBJLoader() {
   const light = useRef<THREE.DirectionalLight>(new THREE.DirectionalLight())
+  const { gl } = useThree()
   const frontLightTarget = useMemo(() => {
     const target = new THREE.Object3D()
     target.position.set(0, 3, 0)
@@ -217,6 +345,11 @@ function SimpleOBJLoader() {
   }, [])
 
   useHelper(light, THREE.DirectionalLightHelper)
+
+  useEffect(() => {
+    gl.shadowMap.enabled = true
+    return () => { gl.shadowMap.enabled = SCENE_CONSTANTS.shadows }
+  }, [gl])
 
   useFrame(() => {
     const r = 10
@@ -1055,7 +1188,7 @@ function SimpleScene({ children, showGrid, backgroundColor, isOrthographic }: {
   return (
     <div style={{ width: SCENE_CONSTANTS.width, height: SCENE_CONSTANTS.height }}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Canvas shadows>
+        <Canvas shadows={SCENE_CONSTANTS.shadows}>
           <PerspectiveCamera ref={perspectiveCamera} args={[SCENE_CONSTANTS.fov,
           SCENE_CONSTANTS.width / SCENE_CONSTANTS.height, 1, 1000]}
             position={SCENE_CONSTANTS.cameraPosition.toArray()}
