@@ -1,4 +1,7 @@
-import React, { SetStateAction, useEffect, useState, Dispatch, useMemo, Suspense, useRef } from 'react';
+import React, {
+  SetStateAction, useEffect, useState, Dispatch, useMemo,
+  Suspense, useRef, useCallback
+} from 'react';
 import { Canvas, useFrame, extend, useThree, ReactThreeFiber, useLoader } from "@react-three/fiber";
 import * as THREE from 'three'
 import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
@@ -9,7 +12,7 @@ import { PerspectiveCamera, OrthographicCamera, useHelper } from '@react-three/d
 import { hexToRgb, rgbToHex, atan, randomInRange } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
-import { MeshPhongMaterial, TextureLoader } from 'three';
+import axios from 'axios'
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
@@ -48,6 +51,29 @@ enum AnimatePerspectiveCamera {
   Fov = 'FOV'
 }
 
+enum ArrowCode {
+  A = 'KeyA',
+  W = 'KeyW',
+  S = 'KeyS',
+  D = 'KeyD'
+}
+
+enum CtrlCode {
+  Right = 'ControlRight',
+  Left = 'ControlLeft'
+}
+
+enum ActionCode {
+  Enter = 'Enter',
+  Backspace = 'Backspace'
+}
+
+interface ScenePage {
+  component: JSX.Element
+  title: string
+  details: string
+}
+
 const SCENE_CONSTANTS = {
   width: 800,
   height: 500,
@@ -60,101 +86,400 @@ const SCENE_CONSTANTS = {
   shadows: false
 }
 
+const diceUrl = 'http://localhost:8000/dices'
+
 function App() {
-  const pages = 36
-  const [page, setPage] = useState<number>(pages - 1)
   const [showGrid, setShowGrid] = useState<boolean>(SCENE_CONSTANTS.showGrid)
   const [backgroundColor, setBackgroundColor] = useState<number>(SCENE_CONSTANTS.backgroundColor)
   const [isOrthographic, setIsOrthographic] = useState<boolean>(SCENE_CONSTANTS.isOrthographic)
 
-  function displayPage() {
-    switch (page) {
-      case 0:
-        return <SimpleAnimatedCube />
-      case 1:
-        return <SimpleSphere />
-      case 2:
-        return <SimpleTorus />
-      case 3:
-        return <SimpleCustomGeo />
-      case 4:
-        return <SimpleText />
-      case 5:
-        return <SimpleNormal geometry={Geometry.Cube} />
-      case 6:
-        return <SimpleNormal geometry={Geometry.Sphere} />
-      case 7:
-        return <SimpleNormal geometry={Geometry.Torus} />
-      case 8:
-        return <SimpleDepthMaterial setBackgroundColor={setBackgroundColor} />
-      case 9:
-        return <SimpleLineMaterial />
-      case 10:
-        return <SimpleDashedLineMaterial />
-      case 11:
-        return <SimplePointsMaterial />
-      case 12:
-        return <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Lambert} />
-      case 13:
-        return <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Phong} />
-      case 14:
-        return <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Standard} />
-      case 15:
-        return <SimpleAmbientLight />
-      case 16:
-        return <SimpleHemisphereLight />
-      case 17:
-        return <SimpleDirectionalLight setShowGrid={setShowGrid} />
-      case 18:
-        return <SimpleDirectionalLight setShowGrid={setShowGrid} lookAt />
-      case 19:
-        return <SimplePointLight setBackgroundColor={setBackgroundColor} />
-      case 20:
-        return <SimplePointLight setBackgroundColor={setBackgroundColor} ambient />
-      case 21:
-        return <SimpleSpotLight setShowGrid={setShowGrid} />
-      case 22:
-        return <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Move} />
-      case 23:
-        return <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Distance} />
-      case 24:
-        return <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Angle} />
-      case 25:
-        return <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Penumbra} />
-      case 26:
-        return <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Decay} />
-      case 27:
-        return <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Fov} />
-      case 28:
-        return <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Move} />
-      case 29:
-        return <SimpleOrthographicCamera {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }} />
-      case 30:
-        return <SimpleTexture />
-      case 31:
-        return <SimpleTextureWithMaterialIndex />
-      case 32:
-        return <SimpleOBJLoader />
-      case 33:
-        return <SimpleKeyboardEvent />
-      case 34:
-        return <SimpleShadow />
-      case 35:
-        return <SimpleBufferGeometryBox />
-      default:
-        return null
+  const sceneChapters: ScenePage[] = [
+    {
+      component: <SimpleAnimatedCube />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSphere />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleTorus />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleCustomGeo />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleText />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleNormal geometry={Geometry.Cube} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleNormal geometry={Geometry.Sphere} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleNormal geometry={Geometry.Torus} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleDepthMaterial setBackgroundColor={setBackgroundColor} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleLineMaterial />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleDashedLineMaterial />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimplePointsMaterial />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Lambert} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Phong} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Standard} />,
+      title: ``,
+      details: ``
+    },
+
+    {
+      component: <SimpleAmbientLight />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleHemisphereLight />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleDirectionalLight setShowGrid={setShowGrid} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleDirectionalLight setShowGrid={setShowGrid} lookAt />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimplePointLight setBackgroundColor={setBackgroundColor} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimplePointLight setBackgroundColor={setBackgroundColor} ambient />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Move} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Distance} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Angle} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Penumbra} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Decay} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Fov} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Move} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleOrthographicCamera {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }} />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleTexture />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleTextureWithMaterialIndex />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleOBJLoader />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleKeyboardEvent />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleShadow />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleBufferGeometryBox />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleBufferGeometrySphere />,
+      title: ``,
+      details: ``
+    },
+    {
+      component: <SimpleSaveAndLoad />,
+      title: `Saving the dice as JSON`,
+      details: `You can save the dices into JSON file.${'\n'}
+      JSON file can be seen at\nhttp://localhost:8000/dices\n\n
+      Some commands are available:\n\n
+      Enter: Change the number of dice\n
+      A: Move left\nW: Move Up\nS: Move down\nD: Move right\n
+      ctrl+S: Save the current object\n
+      ctrl+D: Delete all saved objects\n`
     }
+  ]
+
+  const pages = sceneChapters.length
+  const [page, setPage] = useState<number>(pages - 1)
+
+  function displayDetails() {
+    return sceneChapters[page].details.split('\n').map((text, i) => <p key={i}>{text}</p>)
   }
 
   return <>
     <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
     <button onClick={() => setPage((page + 1) % pages)}>Next</button>
-    <label>{page}</label>
-    <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>{displayPage()}</SimpleScene>
+    <label>{page} </label><label>{sceneChapters[page].title}</label>
+    <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>
+      {sceneChapters[page].component}
+    </SimpleScene>
+    {displayDetails()}
   </>
 }
 
 export default App;
+
+function SimpleSaveAndLoad() {
+  function Dice() {
+    const [ctrlDown, setCtrlDown] = useState<boolean>(false)
+    const [roll, setRoll] = useState<number>(0)
+    const [storedDices, setStoredDices] = useState<THREE.Mesh[]>([])
+    const [moveX, setMoveX] = useState<ArrowCode.A | ArrowCode.D | null>(null)
+    const [moveZ, setMoveZ] = useState<ArrowCode.W | ArrowCode.S | null>(null)
+    const step = useMemo(() => 0.02, [])
+    const face1 = useLoader(THREE.TextureLoader, 'models/dice/1.jpeg')
+    const face2 = useLoader(THREE.TextureLoader, 'models/dice/2.jpeg')
+    const face3 = useLoader(THREE.TextureLoader, 'models/dice/3.jpeg')
+    const face4 = useLoader(THREE.TextureLoader, 'models/dice/4.jpeg')
+    const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
+    const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
+    const loader = useMemo(() => new THREE.ObjectLoader(), [])
+    const dice = useMemo(() => {
+      const geometry = new THREE.BoxGeometry()
+      const materials = [face1, face2, face3, face4, face5, face6].map(texture =>
+        new THREE.MeshPhongMaterial({ map: texture, shininess: 100, side: THREE.DoubleSide })
+      )
+      return new THREE.Mesh(geometry, materials)
+    }, [face1, face2, face3, face4, face5, face6])
+
+    const updateJSONObjects = useCallback(() => {
+      axios.get(diceUrl)
+        .then(res => res.data.map((json: any) => {
+          const dice = loader.parse(json.object);
+          (dice as THREE.Mesh).geometry.groups.forEach(group => group.materialIndex = json.roll)
+          return dice
+        }))
+        .then(res => setStoredDices(res))
+    }, [loader])
+
+    const onSave = useCallback(() => {
+      axios.post(diceUrl, { object: dice.toJSON(), roll })
+        .then(res => { updateJSONObjects() })
+    }, [dice, updateJSONObjects, roll])
+
+    const onClear = useCallback(() => {
+      axios.get(diceUrl)
+        .then(res => {
+          const promises = res.data.map((dat: any) => axios.delete(diceUrl + `/${dat.id}`))
+          return Promise.all(promises)
+        }).then(() => { updateJSONObjects() })
+    }, [updateJSONObjects])
+
+    function displayStoredDices() {
+      return storedDices.map((dice, i) => {
+        (dice.material as THREE.MeshPhongMaterial[]).forEach(material => material.opacity = 0.8)
+        return <primitive key={i} object={dice} />
+      })
+    }
+
+    useEffect(() => { updateJSONObjects() }, [updateJSONObjects])
+
+    useEffect(() => { dice.geometry.groups.forEach(group => group.materialIndex = roll) }, [roll, dice])
+
+    useEffect(() => {
+      window.addEventListener('keydown', onKeyDown)
+      window.addEventListener('keyup', onKeyUp)
+
+      function onKeyDown(e: KeyboardEvent) {
+        e.preventDefault()
+
+        if (ctrlDown) {
+          switch (e.code) {
+            case (ArrowCode.S as string):
+              onSave()
+              break
+            case (ArrowCode.D as string):
+              onClear()
+              break
+            default:
+          }
+          return
+        }
+
+        switch (e.code) {
+          case (CtrlCode.Left as string):
+          case (CtrlCode.Right as string):
+            setCtrlDown(true)
+            break
+          case (ArrowCode.A as string):
+            setMoveX(ArrowCode.A)
+            break
+          case (ArrowCode.D as string):
+            setMoveX(ArrowCode.D)
+            break
+          case (ArrowCode.S as string):
+            setMoveZ(ArrowCode.S)
+            break
+          case (ArrowCode.W as string):
+            setMoveZ(ArrowCode.W)
+            break
+          case (ActionCode.Enter as string):
+            setRoll(prevRoll => (prevRoll + 1) % 6)
+            break
+          case (ActionCode.Backspace as string):
+            // Nothing to do now
+            break
+          default:
+        }
+      }
+
+      function onKeyUp(e: KeyboardEvent) {
+        e.preventDefault()
+        if (e.code === (moveX as string)) setMoveX(null)
+        else if (e.code === (moveZ as string)) setMoveZ(null)
+        else if (e.code === (CtrlCode.Right as string) || e.code === (CtrlCode.Left as string))
+          setCtrlDown(false)
+      }
+
+      return () => {
+        window.removeEventListener('keydown', onKeyDown)
+        window.removeEventListener('keyup', onKeyUp)
+      }
+    }, [ctrlDown, onClear, onSave, moveX, moveZ])
+
+    useFrame(() => {
+      switch (moveX) {
+        case ArrowCode.A:
+          dice.position.x -= step
+          break
+        case ArrowCode.D:
+          dice.position.x += step
+          break
+        default:
+      }
+
+      switch (moveZ) {
+        case ArrowCode.S:
+          dice.position.z += step
+          break
+        case ArrowCode.W:
+          dice.position.z -= step
+          break
+        default:
+      }
+    })
+
+    return <><primitive object={dice} />{displayStoredDices()}</>
+  }
+
+  return <>
+    <ambientLight intensity={0.1} /><directionalLight position={[10, 5, 3]} />
+    <Suspense fallback={null}><Dice /></Suspense>
+  </>
+}
+
+function SimpleBufferGeometrySphere() {
+  // Posponing. Reference on https://threejsfundamentals.org/threejs/lessons/threejs-custom-buffergeometry.html
+
+  return null
+}
 
 function SimpleBufferGeometryBox() {
   const target = useMemo(() => {
@@ -362,9 +687,9 @@ function SimpleOBJLoader() {
     const maxDim = 3
     const obj = useLoader(OBJLoader, 'models/sketch/final_v01.obj', undefined, onProgress)
     const boundingBox = useMemo(() => new THREE.Box3().setFromObject(obj), [obj])
-    const allTexture = useLoader(TextureLoader, 'models/sketch/texture/all.png')
-    const bodyTexture = useLoader(TextureLoader, 'models/sketch/texture/body.png')
-    const headTexture = useLoader(TextureLoader, 'models/sketch/texture/head.png')
+    const allTexture = useLoader(THREE.TextureLoader, 'models/sketch/texture/all.png')
+    const bodyTexture = useLoader(THREE.TextureLoader, 'models/sketch/texture/body.png')
+    const headTexture = useLoader(THREE.TextureLoader, 'models/sketch/texture/head.png')
     const materials = useMemo(() => {
       const skinColor = 0xfff3e6
       const faceSkinColor = 0xffce99
@@ -449,9 +774,9 @@ function SimpleTextureWithMaterialIndex() {
     const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
 
     const materials = useMemo(() => [
-      new MeshPhongMaterial({ map: face1 }), new MeshPhongMaterial({ map: face2 }),
-      new MeshPhongMaterial({ map: face3 }), new MeshPhongMaterial({ map: face4 }),
-      new MeshPhongMaterial({ map: face5 }), new MeshPhongMaterial({ map: face6 })
+      new THREE.MeshPhongMaterial({ map: face1 }), new THREE.MeshPhongMaterial({ map: face2 }),
+      new THREE.MeshPhongMaterial({ map: face3 }), new THREE.MeshPhongMaterial({ map: face4 }),
+      new THREE.MeshPhongMaterial({ map: face5 }), new THREE.MeshPhongMaterial({ map: face6 })
     ], [face1, face2, face3, face4, face5, face6])
 
     useEffect(() => {
