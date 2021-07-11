@@ -55,7 +55,11 @@ enum ArrowCode {
   A = 'KeyA',
   W = 'KeyW',
   S = 'KeyS',
-  D = 'KeyD'
+  D = 'KeyD',
+  Up = 'ArrowUp',
+  Down = 'ArrowDown',
+  Left = 'ArrowLeft',
+  Right = 'ArrowRight'
 }
 
 enum CtrlCode {
@@ -65,7 +69,8 @@ enum CtrlCode {
 
 enum ActionCode {
   Enter = 'Enter',
-  Backspace = 'Backspace'
+  Backspace = 'Backspace',
+  Space = 'Space'
 }
 
 interface ScenePage {
@@ -299,9 +304,9 @@ function App() {
       details: `You can save the dices into JSON file.${'\n'}
       JSON file can be seen at\nhttp://localhost:8000/dices\n\n
       Some commands are available:\n\n
-      Enter: Change the number of dice\n
+      Space: Change the number of dice\n
+      ENTER or ctrl+S: Save the current object\n
       A: Move left\nW: Move Up\nS: Move down\nD: Move right\n
-      ctrl+S: Save the current object\n
       ctrl+D: Delete all saved objects\n`
     }
   ]
@@ -361,15 +366,19 @@ function SimpleSaveAndLoad() {
 
     const onSave = useCallback(() => {
       axios.post(diceUrl, { object: dice.toJSON(), roll })
-        .then(res => { updateJSONObjects() })
+        .then(() => { updateJSONObjects() })
     }, [dice, updateJSONObjects, roll])
 
     const onClear = useCallback(() => {
       axios.get(diceUrl)
         .then(res => {
-          const promises = res.data.map((dat: any) => axios.delete(diceUrl + `/${dat.id}`))
-          return Promise.all(promises)
+          const requests = res.data.map((dat: any) => axios.delete(diceUrl + `/${dat.id}`))
+          return axios.all(requests)
         }).then(() => { updateJSONObjects() })
+        .catch(err => {
+          console.log('Error has occured while deleting objects: ', err)
+          updateJSONObjects()
+        })
     }, [updateJSONObjects])
 
     function displayStoredDices() {
@@ -403,7 +412,7 @@ function SimpleSaveAndLoad() {
           return
         }
 
-        switch (e.code) {
+        switch (arrowMap(e.code)) {
           case (CtrlCode.Left as string):
           case (CtrlCode.Right as string):
             setCtrlDown(true)
@@ -421,6 +430,9 @@ function SimpleSaveAndLoad() {
             setMoveZ(ArrowCode.W)
             break
           case (ActionCode.Enter as string):
+            onSave()
+            break
+          case (ActionCode.Space as string):
             setRoll(prevRoll => (prevRoll + 1) % 6)
             break
           case (ActionCode.Backspace as string):
@@ -432,10 +444,26 @@ function SimpleSaveAndLoad() {
 
       function onKeyUp(e: KeyboardEvent) {
         e.preventDefault()
-        if (e.code === (moveX as string)) setMoveX(null)
-        else if (e.code === (moveZ as string)) setMoveZ(null)
-        else if (e.code === (CtrlCode.Right as string) || e.code === (CtrlCode.Left as string))
+        const code = arrowMap(e.code)
+        if (code === (moveX as string)) setMoveX(null)
+        else if (code === (moveZ as string)) setMoveZ(null)
+        else if (code === (CtrlCode.Right as string) || e.code === (CtrlCode.Left as string))
           setCtrlDown(false)
+      }
+
+      function arrowMap(code: string) {
+        switch (code) {
+          case (ArrowCode.Up as string):
+            return ArrowCode.W
+          case (ArrowCode.Down as string):
+            return ArrowCode.S
+          case (ArrowCode.Right as string):
+            return ArrowCode.D
+          case (ArrowCode.Left as string):
+            return ArrowCode.A
+          default:
+            return code
+        }
       }
 
       return () => {
