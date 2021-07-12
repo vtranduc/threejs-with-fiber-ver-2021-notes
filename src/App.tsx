@@ -1,11 +1,17 @@
 import React, {
-  SetStateAction, useEffect, useState, Dispatch, useMemo,
-  Suspense, useRef, useCallback
-} from 'react';
-import { Canvas, useFrame, extend, useThree, ReactThreeFiber, useLoader } from "@react-three/fiber";
+  SetStateAction,
+  useEffect,
+  useState,
+  Dispatch,
+  useMemo,
+  Suspense,
+  useRef,
+  useCallback,
+} from 'react'
+import { Canvas, useFrame, extend, useThree, ReactThreeFiber, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
-import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Shelter from './fonts/Shelter_PersonalUseOnly_Regular.json'
 import TWEEN from '@tweenjs/tween.js'
 import { PerspectiveCamera, OrthographicCamera, useHelper } from '@react-three/drei'
@@ -14,13 +20,16 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import axios from 'axios'
 
-extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
+extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line })
 
 declare global {
   namespace JSX {
     interface IntrinsicElements {
       orbitControls: ReactThreeFiber.Object3DNode<OrbitControls, typeof OrbitControls>
-      vertexNormalsHelper: ReactThreeFiber.Object3DNode<VertexNormalsHelper, typeof VertexNormalsHelper>
+      vertexNormalsHelper: ReactThreeFiber.Object3DNode<
+        VertexNormalsHelper,
+        typeof VertexNormalsHelper
+      >
       line_: ReactThreeFiber.Object3DNode<THREE.Line, typeof THREE.Line>
     }
   }
@@ -29,13 +38,13 @@ declare global {
 enum Geometry {
   Sphere = 'SPHERE',
   Cube = 'CUBE',
-  Torus = 'TORUS'
+  Torus = 'TORUS',
 }
 
 enum LightSensitiveMaterial {
   Lambert = 'LAMBERT',
   Phong = 'PHONG',
-  Standard = 'STANDARD'
+  Standard = 'STANDARD',
 }
 
 enum AnimateSpotLight {
@@ -43,12 +52,12 @@ enum AnimateSpotLight {
   Distance = 'DISTANCE',
   Angle = 'ANGLE',
   Penumbra = 'PENUMBRA',
-  Decay = 'DECAY'
+  Decay = 'DECAY',
 }
 
 enum AnimatePerspectiveCamera {
   Move = 'MOVE',
-  Fov = 'FOV'
+  Fov = 'FOV',
 }
 
 enum ArrowCode {
@@ -59,18 +68,18 @@ enum ArrowCode {
   Up = 'ArrowUp',
   Down = 'ArrowDown',
   Left = 'ArrowLeft',
-  Right = 'ArrowRight'
+  Right = 'ArrowRight',
 }
 
 enum CtrlCode {
   Right = 'ControlRight',
-  Left = 'ControlLeft'
+  Left = 'ControlLeft',
 }
 
 enum ActionCode {
   Enter = 'Enter',
   Backspace = 'Backspace',
-  Space = 'Space'
+  Space = 'Space',
 }
 
 interface ScenePage {
@@ -88,7 +97,7 @@ const SCENE_CONSTANTS = {
   cameraPosition: new THREE.Vector3(0, 10, 10),
   cameraLookAt: new THREE.Vector3(0, 0, 0),
   isOrthographic: false,
-  shadows: false
+  shadows: false,
 }
 
 const diceUrl = 'http://localhost:8000/dices'
@@ -102,201 +111,209 @@ function App() {
     {
       component: <SimpleAnimatedCube />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSphere />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleTorus />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleCustomGeo />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleText />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleNormal geometry={Geometry.Cube} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleNormal geometry={Geometry.Sphere} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleNormal geometry={Geometry.Torus} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleDepthMaterial setBackgroundColor={setBackgroundColor} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleLineMaterial />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleDashedLineMaterial />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimplePointsMaterial />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Lambert} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Phong} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Standard} />,
       title: ``,
-      details: ``
+      details: ``,
     },
 
     {
       component: <SimpleAmbientLight />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleHemisphereLight />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleDirectionalLight setShowGrid={setShowGrid} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleDirectionalLight setShowGrid={setShowGrid} lookAt />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimplePointLight setBackgroundColor={setBackgroundColor} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimplePointLight setBackgroundColor={setBackgroundColor} ambient />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSpotLight setShowGrid={setShowGrid} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Move} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
-      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Distance} />,
+      component: (
+        <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Distance} />
+      ),
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Angle} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
-      component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Penumbra} />,
+      component: (
+        <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Penumbra} />
+      ),
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSpotLight setShowGrid={setShowGrid} animation={AnimateSpotLight.Decay} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Fov} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimplePerspectiveCamera animate={AnimatePerspectiveCamera.Move} />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
-      component: <SimpleOrthographicCamera {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }} />,
+      component: (
+        <SimpleOrthographicCamera
+          {...{ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }}
+        />
+      ),
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleTexture />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleTextureWithMaterialIndex />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleOBJLoader />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleKeyboardEvent />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleShadow />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleBufferGeometryBox />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleBufferGeometrySphere />,
       title: ``,
-      details: ``
+      details: ``,
     },
     {
       component: <SimpleSaveAndLoad />,
@@ -307,8 +324,8 @@ function App() {
       Space: Change the number of dice\n
       ENTER or ctrl+S: Save the current object\n
       A: Move left\nW: Move Up\nS: Move down\nD: Move right\n
-      ctrl+D: Delete all saved objects\n`
-    }
+      ctrl+D: Delete all saved objects\n`,
+    },
   ]
 
   const pages = sceneChapters.length
@@ -318,18 +335,21 @@ function App() {
     return sceneChapters[page].details.split('\n').map((text, i) => <p key={i}>{text}</p>)
   }
 
-  return <>
-    <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
-    <button onClick={() => setPage((page + 1) % pages)}>Next</button>
-    <label>{page} </label><label>{sceneChapters[page].title}</label>
-    <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>
-      {sceneChapters[page].component}
-    </SimpleScene>
-    {displayDetails()}
-  </>
+  return (
+    <>
+      <button onClick={() => setPage((page ? page : pages) - 1)}>Previous</button>
+      <button onClick={() => setPage((page + 1) % pages)}>Next</button>
+      <label>{page} </label>
+      <label>{sceneChapters[page].title}</label>
+      <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>
+        {sceneChapters[page].component}
+      </SimpleScene>
+      {displayDetails()}
+    </>
+  )
 }
 
-export default App;
+export default App
 
 function SimpleSaveAndLoad() {
   function Dice() {
@@ -348,34 +368,45 @@ function SimpleSaveAndLoad() {
     const loader = useMemo(() => new THREE.ObjectLoader(), [])
     const dice = useMemo(() => {
       const geometry = new THREE.BoxGeometry()
-      const materials = [face1, face2, face3, face4, face5, face6].map(texture =>
-        new THREE.MeshPhongMaterial({ map: texture, shininess: 100, side: THREE.DoubleSide })
+      const materials = [face1, face2, face3, face4, face5, face6].map(
+        (texture) =>
+          new THREE.MeshPhongMaterial({ map: texture, shininess: 100, side: THREE.DoubleSide })
       )
       return new THREE.Mesh(geometry, materials)
     }, [face1, face2, face3, face4, face5, face6])
 
     const updateJSONObjects = useCallback(() => {
-      axios.get(diceUrl)
-        .then(res => res.data.map((json: any) => {
-          const dice = loader.parse(json.object);
-          (dice as THREE.Mesh).geometry.groups.forEach(group => group.materialIndex = json.roll)
-          return dice
-        }))
-        .then(res => setStoredDices(res))
+      axios
+        .get(diceUrl)
+        .then((res) =>
+          res.data.map((json: any) => {
+            const dice = loader.parse(json.object)
+            ;(dice as THREE.Mesh).geometry.groups.forEach(
+              (group) => (group.materialIndex = json.roll)
+            )
+            return dice
+          })
+        )
+        .then((res) => setStoredDices(res))
     }, [loader])
 
     const onSave = useCallback(() => {
-      axios.post(diceUrl, { object: dice.toJSON(), roll })
-        .then(() => { updateJSONObjects() })
+      axios.post(diceUrl, { object: dice.toJSON(), roll }).then(() => {
+        updateJSONObjects()
+      })
     }, [dice, updateJSONObjects, roll])
 
     const onClear = useCallback(() => {
-      axios.get(diceUrl)
-        .then(res => {
+      axios
+        .get(diceUrl)
+        .then((res) => {
           const requests = res.data.map((dat: any) => axios.delete(diceUrl + `/${dat.id}`))
           return axios.all(requests)
-        }).then(() => { updateJSONObjects() })
-        .catch(err => {
+        })
+        .then(() => {
+          updateJSONObjects()
+        })
+        .catch((err) => {
           console.log('Error has occured while deleting objects: ', err)
           updateJSONObjects()
         })
@@ -383,14 +414,20 @@ function SimpleSaveAndLoad() {
 
     function displayStoredDices() {
       return storedDices.map((dice, i) => {
-        (dice.material as THREE.MeshPhongMaterial[]).forEach(material => material.opacity = 0.8)
+        ;(dice.material as THREE.MeshPhongMaterial[]).forEach(
+          (material) => (material.opacity = 0.8)
+        )
         return <primitive key={i} object={dice} />
       })
     }
 
-    useEffect(() => { updateJSONObjects() }, [updateJSONObjects])
+    useEffect(() => {
+      updateJSONObjects()
+    }, [updateJSONObjects])
 
-    useEffect(() => { dice.geometry.groups.forEach(group => group.materialIndex = roll) }, [roll, dice])
+    useEffect(() => {
+      dice.geometry.groups.forEach((group) => (group.materialIndex = roll))
+    }, [roll, dice])
 
     useEffect(() => {
       window.addEventListener('keydown', onKeyDown)
@@ -401,10 +438,10 @@ function SimpleSaveAndLoad() {
 
         if (ctrlDown) {
           switch (e.code) {
-            case (ArrowCode.S as string):
+            case ArrowCode.S as string:
               onSave()
               break
-            case (ArrowCode.D as string):
+            case ArrowCode.D as string:
               onClear()
               break
             default:
@@ -413,29 +450,29 @@ function SimpleSaveAndLoad() {
         }
 
         switch (arrowMap(e.code)) {
-          case (CtrlCode.Left as string):
-          case (CtrlCode.Right as string):
+          case CtrlCode.Left as string:
+          case CtrlCode.Right as string:
             setCtrlDown(true)
             break
-          case (ArrowCode.A as string):
+          case ArrowCode.A as string:
             setMoveX(ArrowCode.A)
             break
-          case (ArrowCode.D as string):
+          case ArrowCode.D as string:
             setMoveX(ArrowCode.D)
             break
-          case (ArrowCode.S as string):
+          case ArrowCode.S as string:
             setMoveZ(ArrowCode.S)
             break
-          case (ArrowCode.W as string):
+          case ArrowCode.W as string:
             setMoveZ(ArrowCode.W)
             break
-          case (ActionCode.Enter as string):
+          case ActionCode.Enter as string:
             onSave()
             break
-          case (ActionCode.Space as string):
-            setRoll(prevRoll => (prevRoll + 1) % 6)
+          case ActionCode.Space as string:
+            setRoll((prevRoll) => (prevRoll + 1) % 6)
             break
-          case (ActionCode.Backspace as string):
+          case ActionCode.Backspace as string:
             // Nothing to do now
             break
           default:
@@ -453,13 +490,13 @@ function SimpleSaveAndLoad() {
 
       function arrowMap(code: string) {
         switch (code) {
-          case (ArrowCode.Up as string):
+          case ArrowCode.Up as string:
             return ArrowCode.W
-          case (ArrowCode.Down as string):
+          case ArrowCode.Down as string:
             return ArrowCode.S
-          case (ArrowCode.Right as string):
+          case ArrowCode.Right as string:
             return ArrowCode.D
-          case (ArrowCode.Left as string):
+          case ArrowCode.Left as string:
             return ArrowCode.A
           default:
             return code
@@ -494,13 +531,23 @@ function SimpleSaveAndLoad() {
       }
     })
 
-    return <><primitive object={dice} />{displayStoredDices()}</>
+    return (
+      <>
+        <primitive object={dice} />
+        {displayStoredDices()}
+      </>
+    )
   }
 
-  return <>
-    <ambientLight intensity={0.1} /><directionalLight position={[10, 5, 3]} />
-    <Suspense fallback={null}><Dice /></Suspense>
-  </>
+  return (
+    <>
+      <ambientLight intensity={0.1} />
+      <directionalLight position={[10, 5, 3]} />
+      <Suspense fallback={null}>
+        <Dice />
+      </Suspense>
+    </>
+  )
 }
 
 function SimpleBufferGeometrySphere() {
@@ -520,53 +567,53 @@ function SimpleBufferGeometryBox() {
     const geometry = useMemo(() => {
       const vertices = [
         // front
-        { pos: [-1, -1, 1], norm: [0, 0, 1], uv: [0, 0], }, // 0
-        { pos: [1, -1, 1], norm: [0, 0, 1], uv: [1, 0], }, // 1
-        { pos: [-1, 1, 1], norm: [0, 0, 1], uv: [0, 1], }, // 2
+        { pos: [-1, -1, 1], norm: [0, 0, 1], uv: [0, 0] }, // 0
+        { pos: [1, -1, 1], norm: [0, 0, 1], uv: [1, 0] }, // 1
+        { pos: [-1, 1, 1], norm: [0, 0, 1], uv: [0, 1] }, // 2
 
         // { pos: [-1, 1, 1], norm: [0, 0, 1], uv: [0, 1], },
         // { pos: [1, -1, 1], norm: [0, 0, 1], uv: [1, 0], },
-        { pos: [1, 1, 1], norm: [0, 0, 1], uv: [1, 1], }, // 3
+        { pos: [1, 1, 1], norm: [0, 0, 1], uv: [1, 1] }, // 3
         // right
-        { pos: [1, -1, 1], norm: [1, 0, 0], uv: [0, 0], }, // 4
-        { pos: [1, -1, -1], norm: [1, 0, 0], uv: [1, 0], }, // 5
+        { pos: [1, -1, 1], norm: [1, 0, 0], uv: [0, 0] }, // 4
+        { pos: [1, -1, -1], norm: [1, 0, 0], uv: [1, 0] }, // 5
 
         // { pos: [1, 1, 1], norm: [1, 0, 0], uv: [0, 1], },
         // { pos: [1, -1, -1], norm: [1, 0, 0], uv: [1, 0], },
-        { pos: [1, 1, 1], norm: [1, 0, 0], uv: [0, 1], }, // 6
-        { pos: [1, 1, -1], norm: [1, 0, 0], uv: [1, 1], }, // 7
+        { pos: [1, 1, 1], norm: [1, 0, 0], uv: [0, 1] }, // 6
+        { pos: [1, 1, -1], norm: [1, 0, 0], uv: [1, 1] }, // 7
         // back
-        { pos: [1, -1, -1], norm: [0, 0, -1], uv: [0, 0], }, // 8
-        { pos: [-1, -1, -1], norm: [0, 0, -1], uv: [1, 0], }, // 9
+        { pos: [1, -1, -1], norm: [0, 0, -1], uv: [0, 0] }, // 8
+        { pos: [-1, -1, -1], norm: [0, 0, -1], uv: [1, 0] }, // 9
 
         // { pos: [1, 1, -1], norm: [0, 0, -1], uv: [0, 1], },
         // { pos: [-1, -1, -1], norm: [0, 0, -1], uv: [1, 0], },
-        { pos: [1, 1, -1], norm: [0, 0, -1], uv: [0, 1], }, // 10
-        { pos: [-1, 1, -1], norm: [0, 0, -1], uv: [1, 1], }, // 11
+        { pos: [1, 1, -1], norm: [0, 0, -1], uv: [0, 1] }, // 10
+        { pos: [-1, 1, -1], norm: [0, 0, -1], uv: [1, 1] }, // 11
         // left
-        { pos: [-1, -1, -1], norm: [-1, 0, 0], uv: [0, 0], }, // 12
-        { pos: [-1, -1, 1], norm: [-1, 0, 0], uv: [1, 0], }, // 13
+        { pos: [-1, -1, -1], norm: [-1, 0, 0], uv: [0, 0] }, // 12
+        { pos: [-1, -1, 1], norm: [-1, 0, 0], uv: [1, 0] }, // 13
 
         // { pos: [-1, 1, -1], norm: [-1, 0, 0], uv: [0, 1], },
         // { pos: [-1, -1, 1], norm: [-1, 0, 0], uv: [1, 0], },
-        { pos: [-1, 1, -1], norm: [-1, 0, 0], uv: [0, 1], }, // 14
-        { pos: [-1, 1, 1], norm: [-1, 0, 0], uv: [1, 1], }, // 15
+        { pos: [-1, 1, -1], norm: [-1, 0, 0], uv: [0, 1] }, // 14
+        { pos: [-1, 1, 1], norm: [-1, 0, 0], uv: [1, 1] }, // 15
         // top
-        { pos: [1, 1, -1], norm: [0, 1, 0], uv: [0, 0], }, // 16
-        { pos: [-1, 1, -1], norm: [0, 1, 0], uv: [1, 0], }, // 17
+        { pos: [1, 1, -1], norm: [0, 1, 0], uv: [0, 0] }, // 16
+        { pos: [-1, 1, -1], norm: [0, 1, 0], uv: [1, 0] }, // 17
 
         // { pos: [1, 1, 1], norm: [0, 1, 0], uv: [0, 1], },
         // { pos: [-1, 1, -1], norm: [0, 1, 0], uv: [1, 0], },
-        { pos: [1, 1, 1], norm: [0, 1, 0], uv: [0, 1], }, // 18
-        { pos: [-1, 1, 1], norm: [0, 1, 0], uv: [1, 1], }, // 19
+        { pos: [1, 1, 1], norm: [0, 1, 0], uv: [0, 1] }, // 18
+        { pos: [-1, 1, 1], norm: [0, 1, 0], uv: [1, 1] }, // 19
         // bottom
-        { pos: [1, -1, 1], norm: [0, -1, 0], uv: [0, 0], }, // 20
-        { pos: [-1, -1, 1], norm: [0, -1, 0], uv: [1, 0], }, // 21
+        { pos: [1, -1, 1], norm: [0, -1, 0], uv: [0, 0] }, // 20
+        { pos: [-1, -1, 1], norm: [0, -1, 0], uv: [1, 0] }, // 21
 
         // { pos: [1, -1, -1], norm: [0, -1, 0], uv: [0, 1], },
         // { pos: [-1, -1, 1], norm: [0, -1, 0], uv: [1, 0], },
-        { pos: [1, -1, -1], norm: [0, -1, 0], uv: [0, 1], }, // 22
-        { pos: [-1, -1, -1], norm: [0, -1, 0], uv: [1, 1], }, // 23
+        { pos: [1, -1, -1], norm: [0, -1, 0], uv: [0, 1] }, // 22
+        { pos: [-1, -1, -1], norm: [0, -1, 0], uv: [1, 1] }, // 23
       ]
 
       const nVertices = vertices.length
@@ -591,15 +638,47 @@ function SimpleBufferGeometryBox() {
       geo.setAttribute('uv', new THREE.BufferAttribute(uv, nUVComps))
 
       geo.setIndex([
-        0, 1, 2, 2, 1, 3,  // front
-        4, 5, 6, 6, 5, 7,  // right
-        8, 9, 10, 10, 9, 11,  // back
-        12, 13, 14, 14, 13, 15,  // left
-        16, 17, 18, 18, 17, 19,  // top
-        20, 21, 22, 22, 21, 23,  // bottom
+        0,
+        1,
+        2,
+        2,
+        1,
+        3, // front
+        4,
+        5,
+        6,
+        6,
+        5,
+        7, // right
+        8,
+        9,
+        10,
+        10,
+        9,
+        11, // back
+        12,
+        13,
+        14,
+        14,
+        13,
+        15, // left
+        16,
+        17,
+        18,
+        18,
+        17,
+        19, // top
+        20,
+        21,
+        22,
+        22,
+        21,
+        23, // bottom
       ])
 
-      for (let i = 0; i < 6; i++) { geo.addGroup(i * 6, 6, i) }
+      for (let i = 0; i < 6; i++) {
+        geo.addGroup(i * 6, 6, i)
+      }
 
       return geo
     }, [])
@@ -611,30 +690,39 @@ function SimpleBufferGeometryBox() {
     const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
     const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
 
-    const material = useMemo(() => [
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face1 }),
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face2 }),
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face3 }),
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face4 }),
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face5 }),
-      new THREE.MeshPhongMaterial({ shininess: 100, map: face6 })
-    ], [face1, face2, face3, face4, face5, face6])
+    const material = useMemo(
+      () => [
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face1 }),
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face2 }),
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face3 }),
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face4 }),
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face5 }),
+        new THREE.MeshPhongMaterial({ shininess: 100, map: face6 }),
+      ],
+      [face1, face2, face3, face4, face5, face6]
+    )
 
     return <mesh geometry={geometry} material={material} />
   }
 
-  return <>
-    <spotLight position={[2, 3, 5]} target={target} />
-    <ambientLight intensity={0.1} />
-    <Suspense fallback={null}><Dice /></Suspense>
-  </>
+  return (
+    <>
+      <spotLight position={[2, 3, 5]} target={target} />
+      <ambientLight intensity={0.1} />
+      <Suspense fallback={null}>
+        <Dice />
+      </Suspense>
+    </>
+  )
 }
 
 function SimpleShadow() {
   const spotLight = useRef<THREE.SpotLight>()
   const { gl } = useThree()
-  const material = useMemo(() =>
-    new THREE.MeshPhongMaterial({ color: 0xdff913, shininess: 100, side: THREE.DoubleSide }), [])
+  const material = useMemo(
+    () => new THREE.MeshPhongMaterial({ color: 0xdff913, shininess: 100, side: THREE.DoubleSide }),
+    []
+  )
 
   useHelper(spotLight, THREE.SpotLightHelper)
 
@@ -648,20 +736,29 @@ function SimpleShadow() {
     }
   }, [gl])
 
-  return <>
-    <spotLight ref={spotLight} castShadow position={[0, 7.5, 5]} angle={Math.PI / 4}
-      penumbra={0.05} decay={2} distance={200} />
-    <mesh castShadow receiveShadow position={[2.5, 1, 0]} material={material}>
-      <boxGeometry args={[2.5, 2.5, 2.5]} />
-    </mesh>
-    <mesh position={[-2, 1, 0]} material={material}>
-      <boxGeometry args={[2.5, 3, 2]} />
-    </mesh>
-    <mesh receiveShadow position={[0, -0.5, 0]}>
-      <boxGeometry args={[1000, 0.5, 1000]} />
-      <meshPhongMaterial color={0x693421} side={THREE.DoubleSide} />
-    </mesh>
-  </>
+  return (
+    <>
+      <spotLight
+        ref={spotLight}
+        castShadow
+        position={[0, 7.5, 5]}
+        angle={Math.PI / 4}
+        penumbra={0.05}
+        decay={2}
+        distance={200}
+      />
+      <mesh castShadow receiveShadow position={[2.5, 1, 0]} material={material}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+      </mesh>
+      <mesh position={[-2, 1, 0]} material={material}>
+        <boxGeometry args={[2.5, 3, 2]} />
+      </mesh>
+      <mesh receiveShadow position={[0, -0.5, 0]}>
+        <boxGeometry args={[1000, 0.5, 1000]} />
+        <meshPhongMaterial color={0x693421} side={THREE.DoubleSide} />
+      </mesh>
+    </>
+  )
 }
 
 function SimpleKeyboardEvent() {
@@ -682,7 +779,9 @@ function SimpleKeyboardEvent() {
       cube.material.color = new THREE.Color(Math.random() * 0xffffff)
       currentCubes.add(cube)
     }
-    return () => { while (currentCubes.children.length) currentCubes.remove(currentCubes.children[0]) }
+    return () => {
+      while (currentCubes.children.length) currentCubes.remove(currentCubes.children[0])
+    }
   }, [cubeGroup, cubeModel])
 
   return <group ref={cubeGroup} />
@@ -701,7 +800,9 @@ function SimpleOBJLoader() {
 
   useEffect(() => {
     gl.shadowMap.enabled = true
-    return () => { gl.shadowMap.enabled = SCENE_CONSTANTS.shadows }
+    return () => {
+      gl.shadowMap.enabled = SCENE_CONSTANTS.shadows
+    }
   }, [gl])
 
   useFrame(() => {
@@ -725,16 +826,24 @@ function SimpleOBJLoader() {
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.DoubleSide }), // hair
         null, // Hair but no provided texture fits
         new THREE.MeshPhysicalMaterial({ map: headTexture, side: THREE.FrontSide }), // Eyes and face skin
-        new THREE.MeshPhysicalMaterial({ color: faceSkinColor, map: allTexture, side: THREE.BackSide }), // Face skin (no eyes and glasses)
+        new THREE.MeshPhysicalMaterial({
+          color: faceSkinColor,
+          map: allTexture,
+          side: THREE.BackSide,
+        }), // Face skin (no eyes and glasses)
         new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.FrontSide }), // Body including cloth and skirt
         new THREE.MeshPhysicalMaterial({ map: bodyTexture, side: THREE.DoubleSide }), // Cloth and skirt
         new THREE.MeshPhysicalMaterial({ color: skinColor, map: allTexture, side: THREE.BackSide }), // Body excluding cloth and skirt
-        new THREE.MeshPhysicalMaterial({ map: allTexture, side: THREE.FrontSide }) // All surroundings
+        new THREE.MeshPhysicalMaterial({ map: allTexture, side: THREE.FrontSide }), // All surroundings
       ]
     }, [allTexture, bodyTexture, headTexture])
 
     function onProgress(progressEvent: ProgressEvent<EventTarget>) {
-      console.log('Model load progress: ', Math.round(progressEvent.loaded / progressEvent.total * 100), '%')
+      console.log(
+        'Model load progress: ',
+        Math.round((progressEvent.loaded / progressEvent.total) * 100),
+        '%'
+      )
     }
 
     useEffect(() => {
@@ -768,24 +877,35 @@ function SimpleOBJLoader() {
       }
     }, [obj, boundingBox, materials])
 
-    return <><box3Helper args={[boundingBox]} /><mesh><primitive object={obj} dispose={null} /></mesh></>
+    return (
+      <>
+        <box3Helper args={[boundingBox]} />
+        <mesh>
+          <primitive object={obj} dispose={null} />
+        </mesh>
+      </>
+    )
   }
 
-  return <>
-    <directionalLight ref={light} position={[0, 10, 10]} castShadow />
-    <directionalLight position={[0, 0, 5]} intensity={0.4} target={frontLightTarget} />
-    <ambientLight intensity={0.1} />
-    <Suspense fallback={<></>}><Faerie /></Suspense>
-  </>
+  return (
+    <>
+      <directionalLight ref={light} position={[0, 10, 10]} castShadow />
+      <directionalLight position={[0, 0, 5]} intensity={0.4} target={frontLightTarget} />
+      <ambientLight intensity={0.1} />
+      <Suspense fallback={<></>}>
+        <Faerie />
+      </Suspense>
+    </>
+  )
 }
 
 /**
  * 37 = left, 38 = up, 39 = right, 40 = down, 32 = space, 13 = enter
- * @returns 
+ * @returns
  */
 
 interface Roll {
-  time: number,
+  time: number
   roll: number
 }
 
@@ -801,36 +921,51 @@ function SimpleTextureWithMaterialIndex() {
     const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
     const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
 
-    const materials = useMemo(() => [
-      new THREE.MeshPhongMaterial({ map: face1 }), new THREE.MeshPhongMaterial({ map: face2 }),
-      new THREE.MeshPhongMaterial({ map: face3 }), new THREE.MeshPhongMaterial({ map: face4 }),
-      new THREE.MeshPhongMaterial({ map: face5 }), new THREE.MeshPhongMaterial({ map: face6 })
-    ], [face1, face2, face3, face4, face5, face6])
+    const materials = useMemo(
+      () => [
+        new THREE.MeshPhongMaterial({ map: face1 }),
+        new THREE.MeshPhongMaterial({ map: face2 }),
+        new THREE.MeshPhongMaterial({ map: face3 }),
+        new THREE.MeshPhongMaterial({ map: face4 }),
+        new THREE.MeshPhongMaterial({ map: face5 }),
+        new THREE.MeshPhongMaterial({ map: face6 }),
+      ],
+      [face1, face2, face3, face4, face5, face6]
+    )
 
     useEffect(() => {
       if (!dice.current) return
       dice.current.material = materials
-      dice.current.geometry.groups.forEach(group => group.materialIndex = 2)
+      dice.current.geometry.groups.forEach((group) => (group.materialIndex = 2))
     }, [dice, materials])
 
     useEffect(() => {
       if (!roll || !dice.current) return
-      dice.current.geometry.groups.forEach(group => group.materialIndex = roll.roll)
+      dice.current.geometry.groups.forEach((group) => (group.materialIndex = roll.roll))
     }, [dice, roll])
 
     useFrame(({ clock }) => {
       if (!roll) setRoll({ time: clock.elapsedTime, roll: 0 })
-      else if (clock.elapsedTime - roll.time >= 0.5) setRoll({ time: clock.elapsedTime, roll: (roll.roll + 1) % 6 })
+      else if (clock.elapsedTime - roll.time >= 0.5)
+        setRoll({ time: clock.elapsedTime, roll: (roll.roll + 1) % 6 })
     })
 
-    return <mesh ref={dice}><boxGeometry args={[1, 1, 1]} /></mesh>
+    return (
+      <mesh ref={dice}>
+        <boxGeometry args={[1, 1, 1]} />
+      </mesh>
+    )
   }
 
-  return <>
-    <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-    <ambientLight intensity={0.5} />
-    <Suspense fallback={null}><Dice /></Suspense>
-  </>
+  return (
+    <>
+      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+      <ambientLight intensity={0.5} />
+      <Suspense fallback={null}>
+        <Dice />
+      </Suspense>
+    </>
+  )
 }
 
 function SimpleTexture() {
@@ -841,26 +976,37 @@ function SimpleTexture() {
     const face4 = useLoader(THREE.TextureLoader, 'models/dice/4.jpeg')
     const face5 = useLoader(THREE.TextureLoader, 'models/dice/5.jpeg')
     const face6 = useLoader(THREE.TextureLoader, 'models/dice/6.jpeg')
-    return <mesh rotation={[Math.PI / 4, Math.PI / 4, Math.PI / 4]}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial map={face1} attachArray='material' />
-      <meshStandardMaterial map={face2} attachArray='material' />
-      <meshStandardMaterial map={face3} attachArray='material' />
-      <meshStandardMaterial map={face4} attachArray='material' />
-      <meshStandardMaterial map={face5} attachArray='material' />
-      <meshStandardMaterial map={face6} attachArray='material' />
-    </mesh>
+    return (
+      <mesh rotation={[Math.PI / 4, Math.PI / 4, Math.PI / 4]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial map={face1} attachArray="material" />
+        <meshStandardMaterial map={face2} attachArray="material" />
+        <meshStandardMaterial map={face3} attachArray="material" />
+        <meshStandardMaterial map={face4} attachArray="material" />
+        <meshStandardMaterial map={face5} attachArray="material" />
+        <meshStandardMaterial map={face6} attachArray="material" />
+      </mesh>
+    )
   }
-  return <>
-    <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-    <Suspense fallback={null}><Dice /></Suspense>
-  </>
+  return (
+    <>
+      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+      <Suspense fallback={null}>
+        <Dice />
+      </Suspense>
+    </>
+  )
 }
 
-function SimpleOrthographicCamera({ setBackgroundColor, setShowGrid, isOrthographic, setIsOrthographic }: {
-  setBackgroundColor: Dispatch<SetStateAction<number>>,
-  setShowGrid: Dispatch<SetStateAction<boolean>>,
-  isOrthographic: boolean;
+function SimpleOrthographicCamera({
+  setBackgroundColor,
+  setShowGrid,
+  isOrthographic,
+  setIsOrthographic,
+}: {
+  setBackgroundColor: Dispatch<SetStateAction<number>>
+  setShowGrid: Dispatch<SetStateAction<boolean>>
+  isOrthographic: boolean
   setIsOrthographic: Dispatch<SetStateAction<boolean>>
 }) {
   const r = useMemo(() => 5, [])
@@ -868,21 +1014,39 @@ function SimpleOrthographicCamera({ setBackgroundColor, setShowGrid, isOrthograp
   const yBase = useMemo(() => -20, [])
   const modelSphere = useMemo(() => {
     const geometry = new THREE.SphereGeometry(r, 30, 30)
-    const material = new THREE.MeshPhongMaterial({ color: 0x0450fb, shininess: 100, side: THREE.DoubleSide })
+    const material = new THREE.MeshPhongMaterial({
+      color: 0x0450fb,
+      shininess: 100,
+      side: THREE.DoubleSide,
+    })
     return new THREE.Mesh(geometry, material)
   }, [r])
   const spheres = useRef<THREE.Group>(null)
   const { camera } = useThree()
   const [theta, setTheta] = useState<number>(0)
-  useEffect(() => () => { setIsOrthographic(false) }, [setIsOrthographic])
-  useEffect(() => () => { camera.position.set(...SCENE_CONSTANTS.cameraPosition.toArray()) }, [camera])
+  useEffect(
+    () => () => {
+      setIsOrthographic(false)
+    },
+    [setIsOrthographic]
+  )
+  useEffect(
+    () => () => {
+      camera.position.set(...SCENE_CONSTANTS.cameraPosition.toArray())
+    },
+    [camera]
+  )
   useEffect(() => {
     setShowGrid(false)
-    return () => { setShowGrid(SCENE_CONSTANTS.showGrid) }
+    return () => {
+      setShowGrid(SCENE_CONSTANTS.showGrid)
+    }
   }, [setShowGrid])
   useEffect(() => {
     setBackgroundColor(0xffffff)
-    return () => { setBackgroundColor(SCENE_CONSTANTS.backgroundColor) }
+    return () => {
+      setBackgroundColor(SCENE_CONSTANTS.backgroundColor)
+    }
   }, [setBackgroundColor])
   useEffect(() => {
     const currentSpheres = spheres.current
@@ -894,17 +1058,24 @@ function SimpleOrthographicCamera({ setBackgroundColor, setShowGrid, isOrthograp
         currentSpheres.add(sphere)
       }
     }
-    return () => { while (currentSpheres.children.length) currentSpheres.remove(currentSpheres.children[0]) }
+    return () => {
+      while (currentSpheres.children.length) currentSpheres.remove(currentSpheres.children[0])
+    }
   }, [modelSphere, r, xBase, yBase])
   useFrame(() => {
     const r = 100
     camera.position.x = r * Math.cos(theta)
     camera.position.z = r * Math.sin(theta)
     const addedTheta = theta + 0.01
-    if (addedTheta >= (Math.PI * 2)) setIsOrthographic(!isOrthographic)
+    if (addedTheta >= Math.PI * 2) setIsOrthographic(!isOrthographic)
     setTheta(addedTheta % (Math.PI * 2))
   })
-  return <><directionalLight /><group ref={spheres} /></>
+  return (
+    <>
+      <directionalLight />
+      <group ref={spheres} />
+    </>
+  )
 }
 
 function SimplePerspectiveCamera({ animate }: { animate?: AnimatePerspectiveCamera }) {
@@ -920,7 +1091,7 @@ function SimplePerspectiveCamera({ animate }: { animate?: AnimatePerspectiveCame
     }
     return () => {
       if (isPerspectiveCamera) {
-        (camera as THREE.PerspectiveCamera).fov = SCENE_CONSTANTS.fov
+        ;(camera as THREE.PerspectiveCamera).fov = SCENE_CONSTANTS.fov
         camera.updateProjectionMatrix()
       }
       camera.position.set(...SCENE_CONSTANTS.cameraPosition.toArray())
@@ -930,7 +1101,7 @@ function SimplePerspectiveCamera({ animate }: { animate?: AnimatePerspectiveCame
     switch (animate) {
       case AnimatePerspectiveCamera.Fov:
         if (!isPerspectiveCamera) break
-        (camera as THREE.PerspectiveCamera).fov += fovAdd
+        ;(camera as THREE.PerspectiveCamera).fov += fovAdd
         camera.updateProjectionMatrix()
         addBackForth((camera as THREE.PerspectiveCamera).fov, fovAdd, setFovAdd, 10, 100)
         break
@@ -943,25 +1114,32 @@ function SimplePerspectiveCamera({ animate }: { animate?: AnimatePerspectiveCame
       default:
     }
   })
-  return <group>
-    <spotLight ref={light} args={[0xffffff, 1]} position={[0, 5, 7.5]} />
-    <mesh position={[3, 0, -1]}>
-      <cylinderGeometry args={[2.5, 2.5, 10, 32]} />
-      <meshPhongMaterial {...{ color: 0x448844, shininess: 100, side: THREE.DoubleSide }} />
-    </mesh>
-    <mesh position={[-2.5, 2.5, 1]}>
-      <sphereGeometry args={[2.5, 30, 30]} />
-      <meshPhongMaterial  {...{ color: 0x693421, shininess: 100, side: THREE.DoubleSide }} />
-    </mesh>
-    <mesh position={[0, -0.5, 0]}>
-      <boxGeometry args={[1000, 0.5, 1000]} />
-      <meshPhongMaterial  {...{ color: 0xabcdef, shininess: 100, side: THREE.DoubleSide }} />
-    </mesh>
-  </group>
+  return (
+    <group>
+      <spotLight ref={light} args={[0xffffff, 1]} position={[0, 5, 7.5]} />
+      <mesh position={[3, 0, -1]}>
+        <cylinderGeometry args={[2.5, 2.5, 10, 32]} />
+        <meshPhongMaterial {...{ color: 0x448844, shininess: 100, side: THREE.DoubleSide }} />
+      </mesh>
+      <mesh position={[-2.5, 2.5, 1]}>
+        <sphereGeometry args={[2.5, 30, 30]} />
+        <meshPhongMaterial {...{ color: 0x693421, shininess: 100, side: THREE.DoubleSide }} />
+      </mesh>
+      <mesh position={[0, -0.5, 0]}>
+        <boxGeometry args={[1000, 0.5, 1000]} />
+        <meshPhongMaterial {...{ color: 0xabcdef, shininess: 100, side: THREE.DoubleSide }} />
+      </mesh>
+    </group>
+  )
 }
 
-function SimpleSpotLight({ setShowGrid, animation }
-  : { setShowGrid: Dispatch<SetStateAction<boolean>>, animation?: AnimateSpotLight }) {
+function SimpleSpotLight({
+  setShowGrid,
+  animation,
+}: {
+  setShowGrid: Dispatch<SetStateAction<boolean>>
+  animation?: AnimateSpotLight
+}) {
   const light = useRef<THREE.SpotLight>(new THREE.SpotLight())
   const [posAdd, setPosAdd] = useState<number>(0.1)
   const [distanceAdd, setDistanceAdd] = useState<number>(-0.1)
@@ -970,12 +1148,16 @@ function SimpleSpotLight({ setShowGrid, animation }
   const [decayAdd, setDecayAdd] = useState<number>(0.02)
   const group = useRef<THREE.Group>()
   const target = useMemo(() => new THREE.Object3D(), [])
-  const material = useMemo(() => new THREE.MeshPhongMaterial(
-    { color: 0xdff913, shininess: 100, side: THREE.DoubleSide }), [])
+  const material = useMemo(
+    () => new THREE.MeshPhongMaterial({ color: 0xdff913, shininess: 100, side: THREE.DoubleSide }),
+    []
+  )
   useHelper(light, THREE.SpotLightHelper)
   useEffect(() => {
     setShowGrid(true)
-    return () => { setShowGrid(SCENE_CONSTANTS.showGrid) }
+    return () => {
+      setShowGrid(SCENE_CONSTANTS.showGrid)
+    }
   }, [setShowGrid])
   useEffect(() => {
     target.position.set(0, 0, 0)
@@ -988,28 +1170,32 @@ function SimpleSpotLight({ setShowGrid, animation }
     const currentGroup = group.current
     if (currentGroup) {
       currentGroup.add(target)
-      return () => { currentGroup.remove(target) }
+      return () => {
+        currentGroup.remove(target)
+      }
     }
   }, [group, target])
-  useEffect(() => { light.current.target = target }, [light, target])
+  useEffect(() => {
+    light.current.target = target
+  }, [light, target])
   useFrame(() => {
     switch (animation) {
       case AnimateSpotLight.Move:
         target.position.x += posAdd
         addBackForth(target.position.x, posAdd, setPosAdd, -5, 5)
-        break;
+        break
       case AnimateSpotLight.Distance:
         light.current.distance += distanceAdd
         addBackForth(light.current.distance, distanceAdd, setDistanceAdd, 5, 20)
-        break;
+        break
       case AnimateSpotLight.Angle:
         light.current.angle += angleAdd
         addBackForth(light.current.angle, angleAdd, setAngleAdd, 0, Math.PI / 10)
-        break;
+        break
       case AnimateSpotLight.Penumbra:
         light.current.penumbra += penumbraAdd
         addBackForth(light.current.penumbra, penumbraAdd, setPenumbraAdd, 0, 1)
-        break;
+        break
       case AnimateSpotLight.Decay:
         light.current.decay += decayAdd
         addBackForth(light.current.decay, decayAdd, setDecayAdd, 0, 5)
@@ -1017,27 +1203,49 @@ function SimpleSpotLight({ setShowGrid, animation }
       default:
     }
   })
-  return <group ref={group}>
-    <spotLight ref={light} args={[0xffffff, 1]} position={[7.5, 10, 5]}
-      angle={Math.PI / 20} penumbra={0.05} decay={2} distance={20} />
-    <mesh position={[2.5, 0, 0]} material={material}><boxGeometry args={[2.5, 2.5, 2.5]} /></mesh>
-    <mesh position={[2.5, 5, 1.8]} material={material}><boxGeometry args={[1, 1, 1]} /></mesh>
-    <mesh position={[0, -0.5, 0]} >
-      <boxGeometry args={[1000, 1, 1000]} />
-      <meshPhongMaterial {...{ color: 0x693421, side: THREE.DoubleSide }} />
-    </mesh>
-  </group>
+  return (
+    <group ref={group}>
+      <spotLight
+        ref={light}
+        args={[0xffffff, 1]}
+        position={[7.5, 10, 5]}
+        angle={Math.PI / 20}
+        penumbra={0.05}
+        decay={2}
+        distance={20}
+      />
+      <mesh position={[2.5, 0, 0]} material={material}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+      </mesh>
+      <mesh position={[2.5, 5, 1.8]} material={material}>
+        <boxGeometry args={[1, 1, 1]} />
+      </mesh>
+      <mesh position={[0, -0.5, 0]}>
+        <boxGeometry args={[1000, 1, 1000]} />
+        <meshPhongMaterial {...{ color: 0x693421, side: THREE.DoubleSide }} />
+      </mesh>
+    </group>
+  )
 }
 
-function addBackForth(val: number, add: number, dispatch: Dispatch<SetStateAction<number>>,
-  low: number, high: number) {
+function addBackForth(
+  val: number,
+  add: number,
+  dispatch: Dispatch<SetStateAction<number>>,
+  low: number,
+  high: number
+) {
   if (val >= high) dispatch(-Math.abs(add))
   else if (val <= low) dispatch(Math.abs(add))
 }
 
-
-function SimplePointLight({ setBackgroundColor, ambient }
-  : { setBackgroundColor: Dispatch<SetStateAction<number>>, ambient?: boolean }) {
+function SimplePointLight({
+  setBackgroundColor,
+  ambient,
+}: {
+  setBackgroundColor: Dispatch<SetStateAction<number>>
+  ambient?: boolean
+}) {
   const [theta, setTheta] = useState<number>(0)
   const pointLight = useRef<THREE.PointLight>(new THREE.PointLight())
   const pointLight2 = useRef<THREE.PointLight>(new THREE.PointLight())
@@ -1045,7 +1253,9 @@ function SimplePointLight({ setBackgroundColor, ambient }
   useHelper(pointLight2, THREE.PointLightHelper)
   useEffect(() => {
     setBackgroundColor(0x000000)
-    return () => { setBackgroundColor(SCENE_CONSTANTS.backgroundColor) }
+    return () => {
+      setBackgroundColor(SCENE_CONSTANTS.backgroundColor)
+    }
   }, [setBackgroundColor])
   useEffect(() => {
     const r = 6
@@ -1058,23 +1268,30 @@ function SimplePointLight({ setBackgroundColor, ambient }
     pointLight2.current.position.z = z * r2x
   }, [theta])
   useFrame(() => setTheta((theta + 0.01) % (2 * Math.PI)))
-  return <group>
-    <pointLight ref={pointLight} args={[0xffffff, 2, 20, 2]} position={[0, 2.5, 0]} />
-    <pointLight ref={pointLight2} args={[0xffffff, 2, 20, 2]} position={[0, 2.5, 0]} />
-    {ambient && <ambientLight args={[0xeeeeee, 1]} intensity={0.2} />}
-    <mesh rotation={[0.6, 0.6, 0]}>
-      <boxGeometry args={[2.5, 2.5, 2.5]} />
-      <meshPhongMaterial color={0xdff913} shininess={100} side={THREE.DoubleSide} />
-    </mesh>
-    <mesh position={[10, 0, 0]} rotation={[0.6, 0.6, 0]}>
-      <boxGeometry args={[2.5, 2.5, 2.5]} />
-      <meshPhongMaterial color={0xdff913} shininess={100} side={THREE.DoubleSide} />
-    </mesh>
-  </group>
+  return (
+    <group>
+      <pointLight ref={pointLight} args={[0xffffff, 2, 20, 2]} position={[0, 2.5, 0]} />
+      <pointLight ref={pointLight2} args={[0xffffff, 2, 20, 2]} position={[0, 2.5, 0]} />
+      {ambient && <ambientLight args={[0xeeeeee, 1]} intensity={0.2} />}
+      <mesh rotation={[0.6, 0.6, 0]}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+        <meshPhongMaterial color={0xdff913} shininess={100} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[10, 0, 0]} rotation={[0.6, 0.6, 0]}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+        <meshPhongMaterial color={0xdff913} shininess={100} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
 }
 
-function SimpleDirectionalLight({ setShowGrid, lookAt = false }
-  : { setShowGrid: Dispatch<SetStateAction<boolean>>, lookAt?: boolean }) {
+function SimpleDirectionalLight({
+  setShowGrid,
+  lookAt = false,
+}: {
+  setShowGrid: Dispatch<SetStateAction<boolean>>
+  lookAt?: boolean
+}) {
   const [theta, setTheta] = useState<number>(0)
   const [showHelper, setShowHelper] = useState<boolean>(true)
   const [towardsCone, setTowardsCone] = useState<boolean>(true)
@@ -1084,27 +1301,41 @@ function SimpleDirectionalLight({ setShowGrid, lookAt = false }
   const group = useRef<THREE.Group>(new THREE.Group())
   const boxPos = useMemo(() => new THREE.Vector3(-3, -2.5, -5), [])
   const conePos = useMemo(() => new THREE.Vector3(3.5, -2.5, 0), [])
-  const material = useMemo(() => new THREE.MeshPhongMaterial({
-    color: 0x0f1d89, side: THREE.DoubleSide, shininess: 100
-  }), [])
-  const lookAtTween = useMemo(() => new TWEEN.Tween(towardsCone ? boxPos.toArray() : conePos.toArray())
-    .to(towardsCone ? conePos.toArray() : boxPos.toArray())
-    .onUpdate(pos => light.current.target.position.set(...pos))
-    .onComplete(() => setTowardsCone(!towardsCone))
-    .start(), [towardsCone, boxPos, conePos])
+  const material = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: 0x0f1d89,
+        side: THREE.DoubleSide,
+        shininess: 100,
+      }),
+    []
+  )
+  const lookAtTween = useMemo(
+    () =>
+      new TWEEN.Tween(towardsCone ? boxPos.toArray() : conePos.toArray())
+        .to(towardsCone ? conePos.toArray() : boxPos.toArray())
+        .onUpdate((pos) => light.current.target.position.set(...pos))
+        .onComplete(() => setTowardsCone(!towardsCone))
+        .start(),
+    [towardsCone, boxPos, conePos]
+  )
 
   useHelper(light, THREE.DirectionalLightHelper)
 
   useEffect(() => {
     setShowGrid(false)
-    return () => { setShowGrid(SCENE_CONSTANTS.showGrid) }
+    return () => {
+      setShowGrid(SCENE_CONSTANTS.showGrid)
+    }
   }, [setShowGrid])
 
   useEffect(() => {
     const currentGroup = group.current
     const currentLight = light.current
     currentGroup.add(currentLight.target)
-    return () => { currentGroup.remove(currentLight.target) }
+    return () => {
+      currentGroup.remove(currentLight.target)
+    }
   }, [group, light])
 
   useEffect(() => {
@@ -1144,20 +1375,29 @@ function SimpleDirectionalLight({ setShowGrid, lookAt = false }
     sphere.current.position.z = z
   }
 
-  return <group ref={group}>
-    {lookAt || showHelper ? <directionalLight ref={light} args={[0xffffff]} position={[2.5, 2, 5]} />
-      : <directionalLight ref={plainLight} args={[0xffffff]} position={[2.5, 2, 5]} />}
-    <mesh ref={sphere} position={[2.5, 2, 5]}>
-      <sphereGeometry args={[0.5, 30, 30]} />
-      <meshBasicMaterial color={0xffd700} />
-    </mesh>
-    <mesh material={material} position={boxPos}><boxGeometry args={[2.5, 2.5, 2.5]} /></mesh>
-    <mesh material={material} position={[3.5, -2.5, 0]}><coneGeometry args={[1.5, 2, 20, 1, true]} /></mesh>
-    <mesh position={[0, -50, 0]} rotation={[Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[500, 500, 50, 50]} />
-      <meshPhongMaterial side={THREE.DoubleSide} color={0x693421} shininess={100} />
-    </mesh>
-  </group>
+  return (
+    <group ref={group}>
+      {lookAt || showHelper ? (
+        <directionalLight ref={light} args={[0xffffff]} position={[2.5, 2, 5]} />
+      ) : (
+        <directionalLight ref={plainLight} args={[0xffffff]} position={[2.5, 2, 5]} />
+      )}
+      <mesh ref={sphere} position={[2.5, 2, 5]}>
+        <sphereGeometry args={[0.5, 30, 30]} />
+        <meshBasicMaterial color={0xffd700} />
+      </mesh>
+      <mesh material={material} position={boxPos}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+      </mesh>
+      <mesh material={material} position={[3.5, -2.5, 0]}>
+        <coneGeometry args={[1.5, 2, 20, 1, true]} />
+      </mesh>
+      <mesh position={[0, -50, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[500, 500, 50, 50]} />
+        <meshPhongMaterial side={THREE.DoubleSide} color={0x693421} shininess={100} />
+      </mesh>
+    </group>
+  )
 }
 
 function SimpleHemisphereLight() {
@@ -1167,30 +1407,45 @@ function SimpleHemisphereLight() {
   const endBottom = 0x0000ff
   const light = useRef<THREE.HemisphereLight>(new THREE.HemisphereLight())
   const [colorForward, setColorForward] = useState<boolean>(true)
-  const colorTween = useMemo(() => new TWEEN
-    .Tween([hexToRgb(colorForward ? startTop : endTop), hexToRgb(colorForward ? startBottom : endBottom)])
-    .to([hexToRgb(colorForward ? endTop : startTop), hexToRgb(colorForward ? endBottom : startBottom)], 2000)
-    .onComplete(() => setColorForward(!colorForward))
-    .onUpdate(rgbs => {
-      light.current.color.set(rgbToHex(rgbs[0].r, rgbs[0].g, rgbs[0].b))
-      light.current.groundColor.set(rgbToHex(rgbs[1].r, rgbs[1].g, rgbs[1].b))
-    }).start(), [colorForward])
+  const colorTween = useMemo(
+    () =>
+      new TWEEN.Tween([
+        hexToRgb(colorForward ? startTop : endTop),
+        hexToRgb(colorForward ? startBottom : endBottom),
+      ])
+        .to(
+          [
+            hexToRgb(colorForward ? endTop : startTop),
+            hexToRgb(colorForward ? endBottom : startBottom),
+          ],
+          2000
+        )
+        .onComplete(() => setColorForward(!colorForward))
+        .onUpdate((rgbs) => {
+          light.current.color.set(rgbToHex(rgbs[0].r, rgbs[0].g, rgbs[0].b))
+          light.current.groundColor.set(rgbToHex(rgbs[1].r, rgbs[1].g, rgbs[1].b))
+        })
+        .start(),
+    [colorForward]
+  )
   useFrame(() => colorTween.update())
-  return <group>
-    <hemisphereLight ref={light} args={[startTop, startBottom]} intensity={0.7} />
-    <mesh position={[2.5, 0, 0]}>
-      <boxGeometry args={[2.5, 2.5, 2.5]} />
-      <meshPhongMaterial side={THREE.DoubleSide} color={0xdff913} shininess={100} />
-    </mesh>
-    <mesh position={[-2.5, 2.5, -2.5]}>
-      <sphereGeometry args={[2.5, 30, 30]} />
-      <meshPhongMaterial side={THREE.DoubleSide} color={0x55cdaa} shininess={100} />
-    </mesh>
-    <mesh position={[0, -1, 0]}>
-      <boxGeometry args={[2000, 1, 2000]} />
-      <meshPhongMaterial side={THREE.DoubleSide} color={0x693421} />
-    </mesh>
-  </group>
+  return (
+    <group>
+      <hemisphereLight ref={light} args={[startTop, startBottom]} intensity={0.7} />
+      <mesh position={[2.5, 0, 0]}>
+        <boxGeometry args={[2.5, 2.5, 2.5]} />
+        <meshPhongMaterial side={THREE.DoubleSide} color={0xdff913} shininess={100} />
+      </mesh>
+      <mesh position={[-2.5, 2.5, -2.5]}>
+        <sphereGeometry args={[2.5, 30, 30]} />
+        <meshPhongMaterial side={THREE.DoubleSide} color={0x55cdaa} shininess={100} />
+      </mesh>
+      <mesh position={[0, -1, 0]}>
+        <boxGeometry args={[2000, 1, 2000]} />
+        <meshPhongMaterial side={THREE.DoubleSide} color={0x693421} />
+      </mesh>
+    </group>
+  )
 }
 
 function SimpleAmbientLight() {
@@ -1200,13 +1455,15 @@ function SimpleAmbientLight() {
     const [colorForward, setColorForward] = useState<boolean>(true)
     const [intensityAdd, setIntensityAdd] = useState<number>(0.08)
     const light = useRef<THREE.AmbientLight>(new THREE.AmbientLight())
-    const colorTween = useMemo(() => new TWEEN
-      .Tween(hexToRgb(colorForward ? startColor : endColor))
-      .to(hexToRgb(colorForward ? endColor : startColor), 10000)
-      .onUpdate(({ r, g, b }) => light.current.color.setHex(rgbToHex(r, g, b))
-      )
-      .onComplete(() => setColorForward(!colorForward))
-      .start(), [colorForward])
+    const colorTween = useMemo(
+      () =>
+        new TWEEN.Tween(hexToRgb(colorForward ? startColor : endColor))
+          .to(hexToRgb(colorForward ? endColor : startColor), 10000)
+          .onUpdate(({ r, g, b }) => light.current.color.setHex(rgbToHex(r, g, b)))
+          .onComplete(() => setColorForward(!colorForward))
+          .start(),
+      [colorForward]
+    )
     useFrame(() => {
       light.current.intensity += intensityAdd
       if (light.current.intensity >= 8) setIntensityAdd(-Math.abs(intensityAdd))
@@ -1244,53 +1501,70 @@ function SimpleLightSensitiveMaterial({ type }: { type: LightSensitiveMaterial }
     switch (type) {
       case LightSensitiveMaterial.Lambert:
         return new THREE.MeshLambertMaterial({
-          side: THREE.DoubleSide, color: 0x7fc5f9,
-          emissive: 0x25673d, emissiveIntensity: 0.5
+          side: THREE.DoubleSide,
+          color: 0x7fc5f9,
+          emissive: 0x25673d,
+          emissiveIntensity: 0.5,
         })
       case LightSensitiveMaterial.Phong:
         return new THREE.MeshPhongMaterial({
-          side: THREE.DoubleSide, color: 0x7fc5f9,
-          emissive: 0x25673d, emissiveIntensity: 0.5,
+          side: THREE.DoubleSide,
+          color: 0x7fc5f9,
+          emissive: 0x25673d,
+          emissiveIntensity: 0.5,
           shininess: 100,
-          specular: 0x9d0a00
+          specular: 0x9d0a00,
         })
       case LightSensitiveMaterial.Standard:
       default:
         return new THREE.MeshStandardMaterial({
-          side: THREE.DoubleSide, color: 0x7fc5f9,
-          emissive: 0x25673d, emissiveIntensity: 0,
-          metalness: 1, roughness: 0.2
+          side: THREE.DoubleSide,
+          color: 0x7fc5f9,
+          emissive: 0x25673d,
+          emissiveIntensity: 0,
+          metalness: 1,
+          roughness: 0.2,
         })
     }
   }, [type])
-  useEffect(() => { setAdd(type === LightSensitiveMaterial.Phong ? 0.6 : 0.006) }, [type])
+  useEffect(() => {
+    setAdd(type === LightSensitiveMaterial.Phong ? 0.6 : 0.006)
+  }, [type])
   useFrame(() => {
-    [box, sphere, cone].forEach(mesh => mesh.current.rotation.x += 0.0085)
+    ;[box, sphere, cone].forEach((mesh) => (mesh.current.rotation.x += 0.0085))
     switch (type) {
       case LightSensitiveMaterial.Lambert:
         material.emissiveIntensity += add
         if (material.emissiveIntensity >= 1) setAdd(-Math.abs(add))
         else if (material.emissiveIntensity <= 0) setAdd(Math.abs(add))
-        break;
+        break
       case LightSensitiveMaterial.Phong:
-        (material as THREE.MeshPhongMaterial).shininess += add
+        ;(material as THREE.MeshPhongMaterial).shininess += add
         if ((material as THREE.MeshPhongMaterial).shininess >= 100) setAdd(-Math.abs(add))
         else if ((material as THREE.MeshPhongMaterial).shininess <= 0) setAdd(Math.abs(add))
         break
       case LightSensitiveMaterial.Standard:
-        (material as THREE.MeshStandardMaterial).roughness += add
+        ;(material as THREE.MeshStandardMaterial).roughness += add
         if ((material as THREE.MeshStandardMaterial).roughness >= 1) setAdd(-Math.abs(add))
         else if ((material as THREE.MeshStandardMaterial).roughness <= 0) setAdd(Math.abs(add))
         break
       default:
     }
   })
-  return <group>
-    <directionalLight args={[0xffffff]} />
-    <mesh ref={box} position={[-3, 0, 0]} material={material}><boxGeometry args={[1.5, 1.5, 1.5]} /></mesh>
-    <mesh ref={sphere} position={[0, 0, 0]} material={material}><sphereGeometry args={[1.5, 15, 15]} /></mesh>
-    <mesh ref={cone} position={[3.5, 0, 0]} material={material}><coneGeometry args={[1.5, 2, 10, 1, true]} /></mesh>
-  </group>
+  return (
+    <group>
+      <directionalLight args={[0xffffff]} />
+      <mesh ref={box} position={[-3, 0, 0]} material={material}>
+        <boxGeometry args={[1.5, 1.5, 1.5]} />
+      </mesh>
+      <mesh ref={sphere} position={[0, 0, 0]} material={material}>
+        <sphereGeometry args={[1.5, 15, 15]} />
+      </mesh>
+      <mesh ref={cone} position={[3.5, 0, 0]} material={material}>
+        <coneGeometry args={[1.5, 2, 10, 1, true]} />
+      </mesh>
+    </group>
+  )
 }
 
 function SimplePointsMaterial() {
@@ -1305,30 +1579,33 @@ function SimplePointsMaterial() {
     geometry.computeBoundingSphere()
     return geometry
   }, [])
-  useEffect(() => { points.current.geometry = geometry }, [points, geometry])
-  useFrame(() => points.current.rotation.y += 0.001)
-  return <points ref={points}><pointsMaterial color={0xffffff} size={0.5} /></points>
+  useEffect(() => {
+    points.current.geometry = geometry
+  }, [points, geometry])
+  useFrame(() => (points.current.rotation.y += 0.001))
+  return (
+    <points ref={points}>
+      <pointsMaterial color={0xffffff} size={0.5} />
+    </points>
+  )
 }
 
 function SimpleDashedLineMaterial() {
   const ref = useRef<THREE.Line>(new THREE.Line())
   const geometry = useMemo(() => {
-    const vertices = [];
-    const divisions = 50;
+    const vertices = []
+    const divisions = 50
     for (let i = 0; i <= divisions; i++) {
-      const v = (i / divisions) * (Math.PI * 2);
-      const x = Math.sin(v);
-      const y = Math.cos(v);
-      vertices.push(x, y, 0);
+      const v = (i / divisions) * (Math.PI * 2)
+      const x = Math.sin(v)
+      const y = Math.cos(v)
+      vertices.push(x, y, 0)
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(vertices, 3)
-    );
-    return geometry;
-  }, []);
-  useFrame(() => ref.current.rotation.z += 0.005)
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+    return geometry
+  }, [])
+  useFrame(() => (ref.current.rotation.z += 0.005))
   return (
     <line_
       ref={ref}
@@ -1338,9 +1615,8 @@ function SimpleDashedLineMaterial() {
     >
       <lineDashedMaterial color="blue" dashSize={0.1} gapSize={0.1} />
     </line_>
-  );
+  )
 }
-
 
 function SimpleLineMaterial() {
   const cylinderGeo = new THREE.CylinderGeometry(1.5, 1, 2)
@@ -1349,23 +1625,35 @@ function SimpleLineMaterial() {
   const sphereGeo = new THREE.SphereGeometry(1.5, 15, 15)
   const spherePos = new THREE.Vector3(2.5, 0, 0)
 
-  function LineObject({ geo, pos }
-    : { geo: THREE.CylinderGeometry | THREE.SphereGeometry, pos: THREE.Vector3 }) {
+  function LineObject({
+    geo,
+    pos,
+  }: {
+    geo: THREE.CylinderGeometry | THREE.SphereGeometry
+    pos: THREE.Vector3
+  }) {
     const line = useRef<THREE.Line>(new THREE.Line())
-    useFrame(() => line.current.rotation.y += 0.01)
-    return <line_ ref={line} geometry={geo} position={pos}>
-      <lineBasicMaterial color={"blue"} linewidth={1} />
-    </line_>
+    useFrame(() => (line.current.rotation.y += 0.01))
+    return (
+      <line_ ref={line} geometry={geo} position={pos}>
+        <lineBasicMaterial color={'blue'} linewidth={1} />
+      </line_>
+    )
   }
 
-  return <group>
-    <LineObject geo={cylinderGeo} pos={cylinderPos} />
-    <LineObject geo={sphereGeo} pos={spherePos} />
-  </group>
+  return (
+    <group>
+      <LineObject geo={cylinderGeo} pos={cylinderPos} />
+      <LineObject geo={sphereGeo} pos={spherePos} />
+    </group>
+  )
 }
 
-function SimpleDepthMaterial({ setBackgroundColor }
-  : { setBackgroundColor: Dispatch<SetStateAction<number>> }) {
+function SimpleDepthMaterial({
+  setBackgroundColor,
+}: {
+  setBackgroundColor: Dispatch<SetStateAction<number>>
+}) {
   const material = new THREE.MeshDepthMaterial()
 
   useEffect(() => {
@@ -1384,7 +1672,11 @@ function SimpleDepthMaterial({ setBackgroundColor }
       else if (ref.current.position.z < -8) setAdd(Math.abs(add))
       ref.current.position.z += add
     })
-    return <mesh ref={ref} position={[-2.5, 0, -5]}><boxGeometry args={[1.5, 1, 2]} /></mesh>
+    return (
+      <mesh ref={ref} position={[-2.5, 0, -5]}>
+        <boxGeometry args={[1.5, 1, 2]} />
+      </mesh>
+    )
   }
 
   function SimpleSphereDepth() {
@@ -1398,15 +1690,24 @@ function SimpleDepthMaterial({ setBackgroundColor }
       else if (ref.current.position.z < -8) setAdd(Math.abs(add))
       ref.current.position.z += add
     })
-    return <mesh ref={ref} position={[2.5, 0, 0]}><sphereGeometry args={[1.5, 30, 30]} /></mesh>
+    return (
+      <mesh ref={ref} position={[2.5, 0, 0]}>
+        <sphereGeometry args={[1.5, 30, 30]} />
+      </mesh>
+    )
   }
 
-  return <group><SimpleBoxDepth /><SimpleSphereDepth /></group>
+  return (
+    <group>
+      <SimpleBoxDepth />
+      <SimpleSphereDepth />
+    </group>
+  )
 }
 
 function SimpleNormal({ geometry }: { geometry?: Geometry }) {
   const mesh = useRef<THREE.Mesh>(new THREE.Mesh())
-  useFrame(() => mesh.current.rotation.x += 0.01)
+  useFrame(() => (mesh.current.rotation.x += 0.01))
   useEffect(() => {
     if (mesh.current) {
       mesh.current.rotation.x = 0
@@ -1428,7 +1729,12 @@ function SimpleNormal({ geometry }: { geometry?: Geometry }) {
         return <boxGeometry args={[1, 1, 1]} />
     }
   }
-  return <mesh ref={mesh}>{getGeo()}<meshNormalMaterial /></mesh>
+  return (
+    <mesh ref={mesh}>
+      {getGeo()}
+      <meshNormalMaterial />
+    </mesh>
+  )
 }
 
 function SimpleText() {
@@ -1438,16 +1744,18 @@ function SimpleText() {
   const opts: THREE.TextGeometryParameters = {
     font,
     size: 1,
-    height: 0.1
-  };
+    height: 0.1,
+  }
   useEffect(() => {
     mesh.current.position.x = -1
   }, [mesh])
-  useFrame(() => mesh.current.rotation.y += 0.006)
-  return <mesh ref={mesh}>
-    <textGeometry args={['Hello\nWorld', opts]} />
-    <meshBasicMaterial color={0x034b59} />
-  </mesh>
+  useFrame(() => (mesh.current.rotation.y += 0.006))
+  return (
+    <mesh ref={mesh}>
+      <textGeometry args={['Hello\nWorld', opts]} />
+      <meshBasicMaterial color={0x034b59} />
+    </mesh>
+  )
 }
 
 function SimpleCustomGeo() {
@@ -1463,34 +1771,44 @@ function SimpleCustomGeo() {
       const v2 = [0, 0, 1]
       const v3 = [0.5, 1, -1]
       const vertices = new Float32Array([
-        ...v0, ...v1, ...v2,
-        ...v1, ...v2, ...v3,
-        ...v0, ...v2, ...v3
+        ...v0,
+        ...v1,
+        ...v2,
+        ...v1,
+        ...v2,
+        ...v3,
+        ...v0,
+        ...v2,
+        ...v3,
       ])
       geometry.current.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     }
   }, [geometry, v0Comp])
   useFrame(() => {
     mesh.current.rotation.y += 0.01
-    setV0Comp(oldV0Compt => {
+    setV0Comp((oldV0Compt) => {
       if (oldV0Compt > v0Limit) setAdd(-Math.abs(add))
       else if (oldV0Compt < -v0Limit) setAdd(Math.abs(add))
       return oldV0Compt + add
     })
   })
-  return <mesh ref={mesh}>
-    <bufferGeometry ref={geometry} />
-    <meshBasicMaterial color={0xffffff} side={THREE.DoubleSide} wireframe />
-  </mesh>
+  return (
+    <mesh ref={mesh}>
+      <bufferGeometry ref={geometry} />
+      <meshBasicMaterial color={0xffffff} side={THREE.DoubleSide} wireframe />
+    </mesh>
+  )
 }
 
 function SimpleTorus() {
   const mesh = useRef<THREE.Mesh>(new THREE.Mesh())
-  useFrame(() => mesh.current.rotation.y += 0.01)
-  return <mesh ref={mesh}>
-    <torusGeometry args={[1, 0.5, 10, 30, Math.PI]} />
-    <meshBasicMaterial color={0xffffff} wireframe />
-  </mesh>
+  useFrame(() => (mesh.current.rotation.y += 0.01))
+  return (
+    <mesh ref={mesh}>
+      <torusGeometry args={[1, 0.5, 10, 30, Math.PI]} />
+      <meshBasicMaterial color={0xffffff} wireframe />
+    </mesh>
+  )
 }
 
 function SimpleSphere() {
@@ -1498,10 +1816,12 @@ function SimpleSphere() {
   useFrame(() => {
     mesh.current.rotation.y += 0.01
   })
-  return <mesh ref={mesh}>
-    <sphereGeometry args={[0.5, 10, 10, 0, Math.PI, 0, Math.PI / 2]} />
-    <meshBasicMaterial color={0x00a1cb} wireframe />
-  </mesh>
+  return (
+    <mesh ref={mesh}>
+      <sphereGeometry args={[0.5, 10, 10, 0, Math.PI, 0, Math.PI / 2]} />
+      <meshBasicMaterial color={0x00a1cb} wireframe />
+    </mesh>
+  )
 }
 
 function SimpleAnimatedCube() {
@@ -1510,8 +1830,7 @@ function SimpleAnimatedCube() {
   const material = useRef<THREE.MeshBasicMaterial>(new THREE.MeshBasicMaterial())
   useFrame(() => {
     mesh.current.position.x += ADD
-    if (mesh.current.position.x >= 2
-      || mesh.current.position.x <= -2) {
+    if (mesh.current.position.x >= 2 || mesh.current.position.x <= -2) {
       ADD *= -1
       material.current.color.setHex(Math.random() * 0xffffff)
     }
@@ -1520,16 +1839,20 @@ function SimpleAnimatedCube() {
     <mesh ref={mesh}>
       <boxGeometry args={[1, 1, 1]} />
       <meshBasicMaterial ref={material} color={0x00a1cb} />
-    </mesh >
+    </mesh>
   )
 }
 
-function SimpleScene({ children, showGrid, backgroundColor, isOrthographic }: {
-  children?: React.ReactChild
-  | React.ReactChild[] | null;
-  showGrid: boolean;
-  backgroundColor: number;
-  isOrthographic: boolean;
+function SimpleScene({
+  children,
+  showGrid,
+  backgroundColor,
+  isOrthographic,
+}: {
+  children?: React.ReactChild | React.ReactChild[] | null
+  showGrid: boolean
+  backgroundColor: number
+  isOrthographic: boolean
 }) {
   const perspectiveCamera = useRef<THREE.PerspectiveCamera>()
   const gridProperties = { size: 10, divisions: 50 }
@@ -1542,12 +1865,17 @@ function SimpleScene({ children, showGrid, backgroundColor, isOrthographic }: {
     <div style={{ width: SCENE_CONSTANTS.width, height: SCENE_CONSTANTS.height }}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <Canvas shadows={SCENE_CONSTANTS.shadows}>
-          <PerspectiveCamera ref={perspectiveCamera} args={[SCENE_CONSTANTS.fov,
-          SCENE_CONSTANTS.width / SCENE_CONSTANTS.height, 1, 1000]}
+          <PerspectiveCamera
+            ref={perspectiveCamera}
+            args={[SCENE_CONSTANTS.fov, SCENE_CONSTANTS.width / SCENE_CONSTANTS.height, 1, 1000]}
             position={SCENE_CONSTANTS.cameraPosition.toArray()}
             makeDefault={!isOrthographic}
           />
-          <OrthographicCamera args={[-300, 300, 400, -400, 1, 1000]} zoom={5} makeDefault={isOrthographic} />
+          <OrthographicCamera
+            args={[-300, 300, 400, -400, 1, 1000]}
+            zoom={5}
+            makeDefault={isOrthographic}
+          />
           <CameraControls />
           {showGrid && <gridHelper args={[gridProperties.size, gridProperties.divisions]} />}
           <color attach="background" args={[backgroundColor]} />
@@ -1558,7 +1886,13 @@ function SimpleScene({ children, showGrid, backgroundColor, isOrthographic }: {
   )
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error, resetErrorBoundary: () => void }) {
+function ErrorFallback({
+  error,
+  resetErrorBoundary,
+}: {
+  error: Error
+  resetErrorBoundary: () => void
+}) {
   return (
     <div role="alert">
       <p>Something went wrong:</p>
@@ -1572,7 +1906,7 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error, resetError
 type IncludeDummy<T> = T | Dummy
 
 class Dummy {
-  public update() { }
+  public update() {}
 }
 
 function CameraControls() {
@@ -1583,20 +1917,20 @@ function CameraControls() {
   const {
     camera,
     gl: { domElement },
-  } = useThree();
+  } = useThree()
 
   // Ref to the controls, so that we can update them on every frame using useFrame
-  const controls = useRef<IncludeDummy<OrbitControls>>(new Dummy());
-  useFrame(() => controls.current.update());
+  const controls = useRef<IncludeDummy<OrbitControls>>(new Dummy())
+  useFrame(() => controls.current.update())
   return (
     <orbitControls
       ref={controls}
       args={[camera, domElement]}
-    // enableZoom={false}
-    // maxAzimuthAngle={Math.PI / 4}
-    // maxPolarAngle={Math.PI}
-    // minAzimuthAngle={-Math.PI / 4}
-    // minPolarAngle={0}
+      // enableZoom={false}
+      // maxAzimuthAngle={Math.PI / 4}
+      // maxPolarAngle={Math.PI}
+      // minAzimuthAngle={-Math.PI / 4}
+      // minPolarAngle={0}
     />
-  );
-};
+  )
+}
