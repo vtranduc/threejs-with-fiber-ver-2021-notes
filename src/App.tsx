@@ -19,6 +19,10 @@ import { hexToRgb, rgbToHex, atan, randomInRange } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import axios from 'axios'
+import { viviStructure, ViviAction } from './models'
+import { Character } from './components'
+import { useCharacter, useCompass, usePrevious, useKeyHandler } from './customHooks'
+import { ArrowCode } from './types'
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line })
 
@@ -60,17 +64,6 @@ enum AnimatePerspectiveCamera {
   Fov = 'FOV',
 }
 
-enum ArrowCode {
-  A = 'KeyA',
-  W = 'KeyW',
-  S = 'KeyS',
-  D = 'KeyD',
-  Up = 'ArrowUp',
-  Down = 'ArrowDown',
-  Left = 'ArrowLeft',
-  Right = 'ArrowRight',
-}
-
 enum CtrlCode {
   Right = 'ControlRight',
   Left = 'ControlLeft',
@@ -80,6 +73,14 @@ enum ActionCode {
   Enter = 'Enter',
   Backspace = 'Backspace',
   Space = 'Space',
+}
+
+enum CharaActionKey {
+  J = 'KeyJ',
+  K = 'KeyK',
+  L = 'KeyL',
+  Semicolon = 'Semicolon',
+  Quote = 'Quote',
 }
 
 interface ScenePage {
@@ -326,6 +327,11 @@ function App() {
       A: Move left\nW: Move Up\nS: Move down\nD: Move right\n
       ctrl+D: Delete all saved objects\n`,
     },
+    {
+      component: <SimpleGLTFAnimation />,
+      title: ``,
+      details: ``,
+    },
   ]
 
   const pages = sceneChapters.length
@@ -350,6 +356,78 @@ function App() {
 }
 
 export default App
+
+function SimpleGLTFAnimation() {
+  function Characters() {
+    const characterOpts = useMemo(() => {
+      return {
+        height: 2,
+        position: new THREE.Vector3(0, 0, 0),
+        euler: new THREE.Euler(0, Math.PI, 0),
+      }
+    }, [])
+    const [viviAnimation, setViviAnimation] = useState<ViviAction | null>(null)
+    const [viviWalks, setViviWalks] = useState<boolean>(false)
+    const viviPreviousAnimation = usePrevious(viviAnimation)
+    const vivi = useCharacter(viviStructure, characterOpts, onAnimationFinished)
+    const { compass } = useCompass()
+
+    function onAnimationFinished(animation: ViviAction) {
+      if (viviAnimation === animation) setViviAnimation(null)
+    }
+
+    useEffect(() => {
+      if (viviAnimation === viviPreviousAnimation) return
+      if (viviPreviousAnimation) vivi.stop(viviPreviousAnimation)
+      if (viviAnimation) vivi.play(viviAnimation)
+    }, [viviAnimation, viviPreviousAnimation, vivi])
+
+    useKeyHandler(CharaActionKey.J, () => {
+      if (!viviWalks) setViviAnimation(ViviAction.PickUpUp)
+    })
+
+    useKeyHandler(CharaActionKey.K, () => {
+      if (!viviWalks) setViviAnimation(ViviAction.PickFloor)
+    })
+
+    useKeyHandler(CharaActionKey.L, () => {
+      if (!viviWalks) setViviAnimation(ViviAction.PickFront)
+    })
+
+    useEffect(() => {
+      if (viviWalks) {
+        setViviAnimation(null)
+        vivi.play(ViviAction.Walk)
+      } else {
+        vivi.stop(ViviAction.Walk)
+      }
+    }, [viviWalks, vivi])
+
+    useEffect(() => {
+      if (compass) {
+        vivi.rotateY(compass)
+        setViviWalks(true)
+      } else {
+        setViviWalks(false)
+      }
+    }, [compass, vivi])
+
+    useFrame(() => {
+      vivi.move(compass)
+    })
+
+    return <Character {...vivi.props} />
+  }
+
+  return (
+    <>
+      <ambientLight />
+      <Suspense fallback={null}>
+        <Characters />
+      </Suspense>
+    </>
+  )
+}
 
 function SimpleSaveAndLoad() {
   function Dice() {
