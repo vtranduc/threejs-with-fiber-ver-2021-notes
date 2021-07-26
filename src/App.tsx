@@ -19,9 +19,14 @@ import { hexToRgb, rgbToHex, atan, randomInRange } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import axios from 'axios'
-import { viviStructure, ViviAction } from './models'
-import { Character } from './components'
-import { useCharacter, useCompass, usePrevious, useKeyHandler } from './customHooks'
+import { ViviAction, viviData } from './models'
+import {
+  useCompass,
+  useKeyHandler,
+  useGLTFAnimation,
+  useShadow,
+  useStateCallback,
+} from './customHooks'
 import { ArrowCode } from './types'
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line })
@@ -79,6 +84,7 @@ enum CharaActionKey {
   J = 'KeyJ',
   K = 'KeyK',
   L = 'KeyL',
+  P = 'KeyP',
   Semicolon = 'Semicolon',
   Quote = 'Quote',
 }
@@ -358,72 +364,58 @@ function App() {
 export default App
 
 function SimpleGLTFAnimation() {
-  function Characters() {
-    const characterOpts = useMemo(() => {
+  function ShadowEnabler() {
+    useShadow()
+    return null
+  }
+
+  function Vivi() {
+    const opts = useMemo(() => {
       return {
-        height: 2,
-        position: new THREE.Vector3(0, 0, 0),
-        euler: new THREE.Euler(0, Math.PI, 0),
+        idleAction: ViviAction.CrossArm,
+        walkAction: ViviAction.Walk,
+        rotateY: Math.PI,
+        transition: undefined,
+        castShadow: true,
       }
     }, [])
-    const [viviAnimation, setViviAnimation] = useState<ViviAction | null>(null)
-    const [viviWalks, setViviWalks] = useState<boolean>(false)
-    const viviPreviousAnimation = usePrevious(viviAnimation)
-    const vivi = useCharacter(viviStructure, characterOpts, onAnimationFinished)
+    const poses = useMemo(() => [ViviAction.CrossArm, ViviAction.PickUpIdle, ViviAction.Sit], [])
+    const { scene, ref, play, move, pose } = useGLTFAnimation<ViviAction>(
+      viviData.path,
+      opts,
+      viviData.actions
+    )
     const { compass } = useCompass()
+    const { poser, switchPose } = usePoseSwitch(poses)
 
-    function onAnimationFinished(animation: ViviAction) {
-      if (viviAnimation === animation) setViviAnimation(null)
+    useStateCallback(compass, () => move(compass))
+    useStateCallback(poser, () => pose(poser))
+    useKeyHandler(CharaActionKey.J, () => play(ViviAction.PickUpUp))
+    useKeyHandler(CharaActionKey.K, () => play(ViviAction.PickFloor))
+    useKeyHandler(CharaActionKey.L, () => play(ViviAction.PickFront))
+    useKeyHandler(CharaActionKey.P, () => switchPose())
+
+    function usePoseSwitch(poses: ViviAction[]) {
+      const [id, setId] = useState<number>(0)
+      const poser = useMemo(() => poses[id], [poses, id])
+      const switchPose = useCallback(() => setId((id + 1) % poses.length), [id, poses])
+      return { poser, switchPose }
     }
 
-    useEffect(() => {
-      if (viviAnimation === viviPreviousAnimation) return
-      if (viviPreviousAnimation) vivi.stop(viviPreviousAnimation)
-      if (viviAnimation) vivi.play(viviAnimation)
-    }, [viviAnimation, viviPreviousAnimation, vivi])
-
-    useKeyHandler(CharaActionKey.J, () => {
-      if (!viviWalks) setViviAnimation(ViviAction.PickUpUp)
-    })
-
-    useKeyHandler(CharaActionKey.K, () => {
-      if (!viviWalks) setViviAnimation(ViviAction.PickFloor)
-    })
-
-    useKeyHandler(CharaActionKey.L, () => {
-      if (!viviWalks) setViviAnimation(ViviAction.PickFront)
-    })
-
-    useEffect(() => {
-      if (viviWalks) {
-        setViviAnimation(null)
-        vivi.play(ViviAction.Walk)
-      } else {
-        vivi.stop(ViviAction.Walk)
-      }
-    }, [viviWalks, vivi])
-
-    useEffect(() => {
-      if (compass) {
-        vivi.rotateY(compass)
-        setViviWalks(true)
-      } else {
-        setViviWalks(false)
-      }
-    }, [compass, vivi])
-
-    useFrame(() => {
-      vivi.move(compass)
-    })
-
-    return <Character {...vivi.props} />
+    return <primitive ref={ref} object={scene} />
   }
 
   return (
     <>
-      <ambientLight />
+      <mesh receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[10, 10]} />
+        <meshPhongMaterial color={0x66ccff} shininess={100} side={THREE.DoubleSide} />
+      </mesh>
+      <ShadowEnabler />
+      <directionalLight intensity={0.5} castShadow position={[10, 10, 10]} />
+      <directionalLight intensity={0.5} castShadow position={[-10, 10, 10]} />
       <Suspense fallback={null}>
-        <Characters />
+        <Vivi />
       </Suspense>
     </>
   )

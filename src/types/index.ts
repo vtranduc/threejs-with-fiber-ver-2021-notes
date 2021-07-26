@@ -1,36 +1,3 @@
-import { MutableRefObject } from 'react'
-
-export interface CharacterStructure<Action extends string> {
-  path: string
-  groups: JSX.IntrinsicElements['group'][]
-  actions: Record<Action, ActionSettings>
-  bone: string
-  skinnedMeshes: {
-    node: string
-    material: string
-  }[]
-}
-
-interface ActionSettings {
-  repeat: boolean
-}
-
-export interface CharacterProps {
-  characterRef: MutableRefObject<THREE.Group | undefined>
-  groups: JSX.IntrinsicElements['group'][]
-  bone: THREE.Bone
-  skinnedMeshes: CharacterSkinnedMesh[]
-}
-
-interface CharacterSkinnedMesh {
-  geometry: THREE.BufferGeometry
-  material: THREE.Material | THREE.Material[]
-  skeleton: THREE.Skeleton
-  morphTargetDictionary?: { [key: string]: number }
-  morphTargetInfluences?: number[]
-  name: string
-}
-
 export enum ArrowCode {
   A = 'KeyA',
   W = 'KeyW',
@@ -52,3 +19,5 @@ export enum Compass {
   SE = 'SE',
   SW = 'SW',
 }
+
+export type ActionOpts<Action extends string> = Record<Action, { repeat: boolean }>

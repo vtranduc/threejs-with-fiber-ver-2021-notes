@@ -79,17 +79,17 @@ export function mapCompassRotation(compass: Compass) {
     case Compass.S:
       return 0
     case Compass.E:
-      return (Math.PI * 3) / 2
-    case Compass.W:
       return Math.PI / 2
+    case Compass.W:
+      return (Math.PI * 3) / 2
     case Compass.NE:
-      return (Math.PI * 5) / 4
-    case Compass.NW:
       return (Math.PI * 3) / 4
+    case Compass.NW:
+      return (Math.PI * 5) / 4
     case Compass.SE:
-      return (Math.PI * 7) / 4
-    case Compass.SW:
       return Math.PI / 4
+    case Compass.SW:
+      return (Math.PI * 7) / 4
     default:
       return NaN
   }

@@ -7,8 +7,6 @@ title: PurpleHeartAnime
 Modifications have been added
 */
 
-import { CharacterStructure } from '../types'
-
 export enum PurpleHeartAction {
   Fight = 'solaFighting',
   Kick = 'solakicking',
@@ -16,32 +14,4 @@ export enum PurpleHeartAction {
   BellyDance = 'solaBellyDance',
   SalsaDance = 'solasalsadancing',
   RoboticDance = 'solaRoboticDance',
-}
-
-export const purpleHeartStructure: CharacterStructure<PurpleHeartAction> = {
-  path: 'models/purple_heart/scene.gltf',
-  groups: [{}, { rotation: [-Math.PI / 2, 0, 0] }, { position: [0, -0.03, 0.04] }],
-  actions: {
-    [PurpleHeartAction.Fight]: { repeat: false },
-    [PurpleHeartAction.Kick]: { repeat: false },
-    [PurpleHeartAction.HipHop]: { repeat: true },
-    [PurpleHeartAction.BellyDance]: { repeat: true },
-    [PurpleHeartAction.SalsaDance]: { repeat: true },
-    [PurpleHeartAction.RoboticDance]: { repeat: true },
-  },
-  bone: 'solana_rootJoint',
-  skinnedMeshes: [
-    {
-      node: 'PurpleHeartV_0',
-      material: 'Material__372',
-    },
-    {
-      node: 'PurpleHeartV_1',
-      material: 'Material__384',
-    },
-    {
-      node: 'PurpleHeartV_2',
-      material: 'Material__396',
-    },
-  ],
 }
