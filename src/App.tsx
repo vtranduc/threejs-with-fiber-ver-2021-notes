@@ -19,7 +19,14 @@ import { hexToRgb, rgbToHex, atan, randomInRange } from './utils'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { ErrorBoundary } from 'react-error-boundary'
 import axios from 'axios'
-import { ViviAction, viviData } from './models'
+import {
+  ViviAction,
+  viviData,
+  PurpleHeartAction,
+  purpleHeartData,
+  ShiranuiAction,
+  shiranuiData,
+} from './models'
 import {
   useCompass,
   useKeyHandler,
@@ -338,6 +345,11 @@ function App() {
       title: ``,
       details: ``,
     },
+    {
+      component: <SimplyRaycaster />,
+      title: ``,
+      details: ``,
+    },
   ]
 
   const pages = sceneChapters.length
@@ -363,6 +375,44 @@ function App() {
 
 export default App
 
+function SimplyRaycaster() {
+  console.log('RENDER!!!')
+  const { camera, scene } = useThree()
+
+  const raycaster = useMemo(() => new THREE.Raycaster(), [])
+  const mouse = useMemo(() => new THREE.Vector2(), [])
+
+  // DELETE THIS /////////
+
+  const v1 = new THREE.Vector3(1, 2, 3)
+  const v2 = new THREE.Vector3(4, 5, 6)
+
+  console.log(v1, v2)
+
+  console.log('endorsing -------> ', v1.multiply(v2))
+
+  ///////////////////////////
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onMouseMove, false)
+    function onMouseMove(e: MouseEvent) {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
+      raycaster.setFromCamera(mouse, camera)
+
+      const intersects = raycaster.intersectObjects(scene.children)
+      // console.log('??? ', intersects)
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove, false)
+    }
+  }, [raycaster, camera, mouse, scene])
+
+  // const intersects = raycaster.intersectObjects(scene.children)
+
+  return null
+}
+
 function SimpleGLTFAnimation() {
   function ShadowEnabler() {
     useShadow()
@@ -380,13 +430,9 @@ function SimpleGLTFAnimation() {
       }
     }, [])
     const poses = useMemo(() => [ViviAction.CrossArm, ViviAction.PickUpIdle, ViviAction.Sit], [])
-    const { scene, ref, play, move, pose } = useGLTFAnimation<ViviAction>(
-      viviData.path,
-      opts,
-      viviData.actions
-    )
     const { compass } = useCompass()
     const { poser, switchPose } = usePoseSwitch(poses)
+    const { scene, ref, play, move, pose } = useGLTFAnimation<ViviAction>(viviData, opts)
 
     useStateCallback(compass, () => move(compass))
     useStateCallback(poser, () => pose(poser))
@@ -405,6 +451,19 @@ function SimpleGLTFAnimation() {
     return <primitive ref={ref} object={scene} />
   }
 
+  function PurpleHeart() {
+    const { scene, ref } = useGLTFAnimation<PurpleHeartAction>(purpleHeartData, {})
+
+    return <primitive ref={ref} object={scene} />
+  }
+
+  function Shiranui() {
+    const { scene, ref } = useGLTFAnimation(shiranuiData, {
+      idleAction: ShiranuiAction.Idle,
+    })
+    return <primitive ref={ref} object={scene} />
+  }
+
   return (
     <>
       <mesh receiveShadow rotation={[Math.PI / 2, 0, 0]}>
@@ -416,6 +475,8 @@ function SimpleGLTFAnimation() {
       <directionalLight intensity={0.5} castShadow position={[-10, 10, 10]} />
       <Suspense fallback={null}>
         <Vivi />
+        <PurpleHeart />
+        <Shiranui />
       </Suspense>
     </>
   )

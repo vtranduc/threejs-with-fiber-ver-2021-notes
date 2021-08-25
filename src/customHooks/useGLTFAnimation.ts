@@ -21,9 +21,8 @@ type ActionAnimation<Action extends string> = Record<Action, THREE.AnimationActi
 type CompassMap = Record<Compass, { rotationY: number; velocity: THREE.Vector3 }>
 
 export function useGLTFAnimation<Action extends string>(
-  path: string,
-  opts: GTLFAnimationOption<Action> = {},
-  actionOpts: ActionOpts<Action>
+  { path, actions: actionOpts }: { path: string; actions: ActionOpts<Action> },
+  opts: GTLFAnimationOption<Action> = {}
 ) {
   const ref = useRef<THREE.Object3D>(new THREE.Object3D())
   const { scene, animations } = useGLTF(path)
