@@ -1,8 +1,10 @@
-import * as THREE from 'three'
+import * as THREE from "three";
 
 export const SCENE_CONSTANTS = {
   width: 800,
   height: 500,
+  top: 25,
+  left: 0,
   backgroundColor: 0xababab,
   showGrid: true,
   fov: 30,
@@ -10,4 +12,4 @@ export const SCENE_CONSTANTS = {
   cameraLookAt: new THREE.Vector3(0, 0, 0),
   isOrthographic: false,
   shadows: false,
-}
+};

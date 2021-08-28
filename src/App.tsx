@@ -40,12 +40,16 @@ import {
 } from "./models";
 import {
   useCompass,
+  useKeyDown,
   useKeyHandler,
   useGLTFAnimation,
   useShadow,
   useStateCallback,
+  useMouseMove,
 } from "./customHooks";
 import { ArrowCode } from "./types";
+import { SCENE_CONSTANTS } from "./constants";
+import { ShadowEnabler } from "./components";
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
@@ -109,8 +113,14 @@ enum CharaActionKey {
   I = "KeyI",
   O = "KeyO",
   P = "KeyP",
+  R = "KeyR",
   Semicolon = "Semicolon",
   Quote = "Quote",
+}
+
+enum Fade {
+  In = "In",
+  Out = "Out",
 }
 
 interface ScenePage {
@@ -118,18 +128,6 @@ interface ScenePage {
   title: string;
   details: string;
 }
-
-const SCENE_CONSTANTS = {
-  width: 800,
-  height: 500,
-  backgroundColor: 0xababab,
-  showGrid: true,
-  fov: 30,
-  cameraPosition: new THREE.Vector3(0, 10, 10),
-  cameraLookAt: new THREE.Vector3(0, 0, 0),
-  isOrthographic: false,
-  shadows: false,
-};
 
 const diceUrl = "http://localhost:8000/dices";
 
@@ -153,43 +151,36 @@ function App() {
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleTorus />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleCustomGeo />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleText />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleNormal geometry={Geometry.Cube} />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleNormal geometry={Geometry.Sphere} />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleNormal geometry={Geometry.Torus} />,
       title: ``,
       details: ``,
     },
-
     {
       component: (
         <SimpleDepthMaterial setBackgroundColor={setBackgroundColor} />
@@ -197,25 +188,21 @@ function App() {
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleLineMaterial />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleDashedLineMaterial />,
       title: ``,
       details: ``,
     },
-
     {
       component: <SimplePointsMaterial />,
       title: ``,
       details: ``,
     },
-
     {
       component: (
         <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Lambert} />
@@ -223,7 +210,6 @@ function App() {
       title: ``,
       details: ``,
     },
-
     {
       component: (
         <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Phong} />
@@ -231,7 +217,6 @@ function App() {
       title: ``,
       details: ``,
     },
-
     {
       component: (
         <SimpleLightSensitiveMaterial type={LightSensitiveMaterial.Standard} />
@@ -239,7 +224,6 @@ function App() {
       title: ``,
       details: ``,
     },
-
     {
       component: <SimpleAmbientLight />,
       title: ``,
@@ -404,7 +388,7 @@ function App() {
     {
       component: <SimpleGLTFAnimation />,
       title: `Play with fully animated characters!`,
-      details: `You can play play with 2 fully animated characters.\n
+      details: `You can play with 2 fully animated characters. (Another one is idling NPC)\n
       Vivi's commands:\n
       WASD: Move
       J: Pick up\n
@@ -417,7 +401,16 @@ function App() {
       P: Switch pose`,
     },
     {
-      component: <SimpleRaycaster />,
+      component: <SimpleRaycaster1 />,
+      title: `Use Raycaster to trace the mouse intersection point on rotated plane`,
+      details: `This demonstrates mouse movement can be traced on a plane twisted in any angle.\n
+      Controls:\n
+      WASD: Uses these keys to change rotation of the plane\n
+      R: Resets the rotation of the plane\n
+      Now, move the mouse over plane. A red ball's position is adjusted to intersection point on the plane\n`,
+    },
+    {
+      component: <SimpleRaycaster2 />,
       title: ``,
       details: ``,
     },
@@ -443,57 +436,203 @@ function App() {
       <SimpleScene {...{ showGrid, backgroundColor, isOrthographic }}>
         {sceneChapters[page].component}
       </SimpleScene>
-      {displayDetails()}
+      <div
+        style={{
+          top: SCENE_CONSTANTS.top + SCENE_CONSTANTS.height,
+          position: "absolute",
+        }}
+      >
+        {displayDetails()}
+      </div>
     </>
   );
 }
 
 export default App;
 
-function SimpleRaycaster() {
-  console.log("RENDER!!!");
+function SimpleRaycaster2() {
+  const group = useRef<THREE.Group>(new THREE.Group());
   const { camera, scene } = useThree();
-
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
-  const mouse = useMemo(() => new THREE.Vector2(), []);
 
-  // DELETE THIS /////////
+  const coord = useMouseMove();
 
-  const v1 = new THREE.Vector3(1, 2, 3);
-  const v2 = new THREE.Vector3(4, 5, 6);
-
-  console.log(v1, v2);
-
-  console.log("endorsing -------> ", v1.multiply(v2));
-
-  ///////////////////////////
+  function InterativeBox({ position }: { position?: THREE.Vector3 }) {
+    return (
+      <mesh position={position}>
+        <boxGeometry />
+        <meshPhongMaterial
+          color={0x66ccff}
+          shininess={95}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    );
+  }
 
   useEffect(() => {
-    window.addEventListener("mousemove", onMouseMove, false);
-    function onMouseMove(e: MouseEvent) {
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+    const mouse = new THREE.Vector2();
+    mouse.fromArray(coord);
 
-      const intersects = raycaster.intersectObjects(scene.children);
-      // console.log('??? ', intersects)
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(group.current.children);
+    console.log("show me children ------< ", intersects);
+  }, [raycaster, coord, camera]);
+
+  return (
+    <>
+      <directionalLight position={[5, 10, 15]} />
+      <group ref={group}>
+        <InterativeBox />
+      </group>
+      ;
+    </>
+  );
+}
+
+function SimpleRaycaster1() {
+  const { camera } = useThree();
+  const [fade, setFade] = useState<Fade | null>(null);
+  const [inPlane, setInPlane] = useState<boolean>(false);
+  const rotatingRate = useMemo(() => 0.05, []);
+  const plane = useRef<THREE.Mesh>(new THREE.Mesh());
+  const ball = useRef<THREE.Mesh>(new THREE.Mesh());
+  const coord = useMouseMove();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const mouse = useMemo(() => new THREE.Vector2(), []);
+  const material = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+        transparent: true,
+        shininess: 100,
+        side: THREE.DoubleSide,
+      }),
+    []
+  );
+
+  const W = useKeyDown(ArrowCode.W);
+  const S = useKeyDown(ArrowCode.S);
+  const A = useKeyDown(ArrowCode.A);
+  const D = useKeyDown(ArrowCode.D);
+
+  const rotatePlane = useCallback(() => {
+    let rotationX = 0;
+    let rotationY = 0;
+    if (W) {
+      if (!S) rotationX = -rotatingRate;
+    } else if (S) rotationX = rotatingRate;
+    if (D) {
+      if (!A) rotationY = -rotatingRate;
+    } else if (A) rotationY = rotatingRate;
+    plane.current.rotation.x += rotationX;
+    plane.current.rotation.y += rotationY;
+    return !!(rotationX || rotationY);
+  }, [W, S, A, D, rotatingRate]);
+
+  const toggleBall = useCallback(
+    (on: boolean) => {
+      if (on === inPlane) return;
+      setInPlane(on);
+      if (!on) setFade(Fade.Out);
+    },
+    [inPlane]
+  );
+
+  const resetPlane = useCallback(() => {
+    plane.current.rotation.x = Math.PI / 2;
+    plane.current.rotation.y = 0;
+    toggleBall(false);
+  }, [plane, toggleBall]);
+
+  useKeyHandler(CharaActionKey.R, resetPlane);
+
+  useShadow();
+
+  useEffect(() => {
+    plane.current.rotation.set(Math.PI / 2, 0, 0);
+  }, [plane]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    switch (fade) {
+      case Fade.In:
+        const tweenIn = new TWEEN.Tween({
+          opacity: material.opacity,
+          shininess: material.shininess,
+        })
+          .to({ opacity: 1, shininess: 100 }, 300)
+          .easing(TWEEN.Easing.Quintic.Out)
+          .onUpdate(onTweenUpdate)
+          .onComplete(() => {
+            ball.current.castShadow = true;
+            setFade(null);
+          })
+          .start();
+        timer = setInterval(() => tweenIn.update(), 20);
+        break;
+      case Fade.Out:
+        ball.current.castShadow = false;
+        const tweenOut = new TWEEN.Tween({
+          opacity: material.opacity,
+          shininess: material.shininess,
+        })
+          .to({ opacity: 0, shininess: 0 }, 300)
+          .easing(TWEEN.Easing.Quintic.Out)
+          .onUpdate(onTweenUpdate)
+          .onComplete(() => {
+            ball.current.position.set(0, 0, 0);
+            setFade(Fade.In);
+          })
+          .start();
+        timer = setInterval(() => tweenOut.update(), 20);
+        break;
+      default:
     }
+
+    function onTweenUpdate(vals: { opacity: number; shininess: number }) {
+      material.opacity = vals.opacity;
+      material.shininess = vals.shininess;
+    }
+
     return () => {
-      window.removeEventListener("mousemove", onMouseMove, false);
+      clearInterval(timer);
     };
-  }, [raycaster, camera, mouse, scene]);
+  }, [fade, material, ball]);
 
-  // const intersects = raycaster.intersectObjects(scene.children)
+  useEffect(() => {
+    raycaster.setFromCamera(mouse.fromArray(coord), camera);
+    const intersect = raycaster.intersectObject(plane.current)[0];
+    toggleBall(!!intersect);
+    if (intersect) ball.current.position.set(...intersect.point.toArray());
+  }, [coord, raycaster, camera, mouse, plane, ball, toggleBall]);
 
-  return null;
+  useFrame(() => {
+    const rotated = rotatePlane();
+    if (rotated) toggleBall(false);
+  });
+
+  return (
+    <>
+      <ambientLight intensity={0.1} />
+      <directionalLight position={[5, 10, 15]} castShadow />
+      <mesh ref={plane} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshPhongMaterial
+          color={0x66ccff}
+          shininess={100}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh ref={ball} material={material} castShadow>
+        <sphereGeometry args={[0.2, 30, 30]} />
+      </mesh>
+    </>
+  );
 }
 
 function SimpleGLTFAnimation() {
-  function ShadowEnabler() {
-    useShadow();
-    return null;
-  }
-
   function Vivi() {
     const opts = useMemo(() => {
       return {
@@ -2284,7 +2423,13 @@ function SimpleScene({
   }, [perspectiveCamera]);
   return (
     <div
-      style={{ width: SCENE_CONSTANTS.width, height: SCENE_CONSTANTS.height }}
+      style={{
+        width: SCENE_CONSTANTS.width,
+        height: SCENE_CONSTANTS.height,
+        position: "absolute",
+        top: SCENE_CONSTANTS.top,
+        left: SCENE_CONSTANTS.left,
+      }}
     >
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <Canvas shadows={SCENE_CONSTANTS.shadows}>

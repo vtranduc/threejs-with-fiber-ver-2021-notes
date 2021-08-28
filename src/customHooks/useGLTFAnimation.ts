@@ -44,7 +44,7 @@ export function useGLTFAnimation<Action extends string>(
   const [idleAction, setIdleAction] = useState<Action | null>(
     (opts.idleActions && opts.idleActions[0]) || null
   );
-  const [idleTimer, setTimer] = useState<ReturnType<typeof setTimeout>>(
+  const [idleTimer, setIdleTimer] = useState<ReturnType<typeof setTimeout>>(
     setTimeout(() => {}, 0)
   );
   const startingY = useMemo(() => opts.rotateY || 0, [opts.rotateY]);
@@ -150,7 +150,7 @@ export function useGLTFAnimation<Action extends string>(
           (animationAction.getClip().duration - transition) * 1000;
         if (fadeOutPoint > 0) {
           const timer = setTimeout(() => setAction(idleAction), fadeOutPoint);
-          setTimer(timer);
+          setIdleTimer(timer);
         } else setAction(idleAction);
       }
     }
