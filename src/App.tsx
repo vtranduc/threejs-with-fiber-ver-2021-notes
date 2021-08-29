@@ -26,7 +26,7 @@ import {
   OrthographicCamera,
   useHelper,
 } from "@react-three/drei";
-import { hexToRgb, rgbToHex, atan, randomInRange } from "./utils";
+import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { ErrorBoundary } from "react-error-boundary";
 import axios from "axios";
@@ -46,6 +46,7 @@ import {
   useShadow,
   useStateCallback,
   useMouseMove,
+  useClickHandler,
 } from "./customHooks";
 import { ArrowCode } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
@@ -411,8 +412,12 @@ function App() {
     },
     {
       component: <SimpleRaycaster2 />,
-      title: ``,
-      details: ``,
+      title: `Use Raycaster to identify all boxes that have been clicked`,
+      details: `Clicking will propagate through the sphere, highlighting all intersecting boxes.\n
+      Note that opacity is set low for boxes that are not highlighted.\n
+      Controls:\n
+      Space: Shuffle the boxes within the sphere\n
+      Click: Click in the sphere and highlight all the intersecting boxes!\n`,
     },
   ];
 
@@ -451,42 +456,94 @@ function App() {
 export default App;
 
 function SimpleRaycaster2() {
-  const group = useRef<THREE.Group>(new THREE.Group());
-  const { camera, scene } = useThree();
+  const { camera } = useThree();
+  const r = useMemo(() => 3, []);
+  const nBoxes = useMemo(() => 2000, []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const mouse = useMemo(() => new THREE.Vector2(), []);
+  const colors = useMemo(() => {
+    return { normal: 0x66ccff, highlight: 0xff0000 };
+  }, []);
+  const opacities = useMemo(() => {
+    return { normal: 0.2, highlight: 1 };
+  }, []);
+  const group = useRef<THREE.Group>(new THREE.Group());
+  const boxes = useMemo(() => {
+    const boxes = [];
+    for (let i = 0; i < nBoxes; i++) {
+      const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+      const material = new THREE.MeshPhongMaterial({
+        color: colors.normal,
+        shininess: 100,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: opacities.normal,
+      });
+      const box = new THREE.Mesh(geometry, material);
+      box.castShadow = false;
+      box.receiveShadow = false;
+      boxes.push(box);
+    }
+    return boxes;
+  }, [nBoxes, colors, opacities]);
+  const shuffleBoxes = useCallback(() => {
+    boxes.forEach((box) => box.position.set(...randomSphereCoord()));
+    function randomSphereCoord() {
+      const r1 = randomInRange(-r, r);
+      const maxAbsR2 = Math.sqrt(Math.pow(r, 2) - Math.pow(r1, 2));
+      const r2 = randomInRange(-maxAbsR2, maxAbsR2);
+      const maxAbsR3 = Math.sqrt(
+        Math.pow(r, 2) - Math.pow(r1, 2) - Math.pow(r2, 2)
+      );
+      const r3 = randomInRange(-maxAbsR3, maxAbsR3);
+      return shuffleArray([r1, r2, r3]) as [number, number, number];
+    }
+  }, [boxes, r]);
+  const castColor = useCallback(
+    (coord: [number, number]) => {
+      mouse.fromArray(coord);
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster
+        .intersectObjects(boxes)
+        .map((clicked) => clicked.object.uuid);
+      boxes.forEach((box) => {
+        if (intersects.includes(box.uuid)) {
+          box.material.color.set(colors.highlight);
+          box.material.opacity = opacities.highlight;
+          box.castShadow = true;
+          box.receiveShadow = true;
+        } else {
+          box.material.color.set(colors.normal);
+          box.material.opacity = opacities.normal;
+          box.castShadow = false;
+          box.receiveShadow = false;
+        }
+      });
+    },
 
-  const coord = useMouseMove();
-
-  function InterativeBox({ position }: { position?: THREE.Vector3 }) {
-    return (
-      <mesh position={position}>
-        <boxGeometry />
-        <meshPhongMaterial
-          color={0x66ccff}
-          shininess={95}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    );
-  }
-
+    [boxes, raycaster, camera, mouse, colors, opacities]
+  );
+  useClickHandler(castColor);
+  useKeyHandler(ActionCode.Space, shuffleBoxes);
+  useShadow();
   useEffect(() => {
-    const mouse = new THREE.Vector2();
-    mouse.fromArray(coord);
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const intersects = raycaster.intersectObjects(group.current.children);
-    console.log("show me children ------< ", intersects);
-  }, [raycaster, coord, camera]);
-
+    shuffleBoxes();
+  }, [shuffleBoxes]);
+  useEffect(() => {
+    const boxGroup = group.current;
+    boxes.forEach((box) => boxGroup.add(box));
+    return () => {
+      boxes.forEach((box) => boxGroup.remove(box));
+    };
+  }, [group, boxes]);
   return (
     <>
-      <directionalLight position={[5, 10, 15]} />
-      <group ref={group}>
-        <InterativeBox />
-      </group>
-      ;
+      <directionalLight position={[5, 10, 15]} castShadow />
+      <group ref={group} />
+      <mesh>
+        <sphereGeometry args={[r, 30, 30]} />
+        <meshBasicMaterial wireframe />
+      </mesh>
     </>
   );
 }
@@ -535,7 +592,8 @@ function SimpleRaycaster1() {
     (on: boolean) => {
       if (on === inPlane) return;
       setInPlane(on);
-      if (!on) setFade(Fade.Out);
+      if (on) setFade(Fade.In);
+      else setFade(Fade.Out);
     },
     [inPlane]
   );
@@ -556,6 +614,7 @@ function SimpleRaycaster1() {
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
+
     switch (fade) {
       case Fade.In:
         const tweenIn = new TWEEN.Tween({

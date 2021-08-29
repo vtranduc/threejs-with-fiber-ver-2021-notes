@@ -6,3 +6,4 @@ export * from "./useGLTFAnimation";
 export * from "./useShadow";
 export * from "./useStateCallback";
 export * from "./useMouseMove";
+export * from "./useClickHandler";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SCENE_CONSTANTS } from "../constants";
+import { getSceneMouseCoord } from "../utils";
 
 export function useMouseMove() {
   const [coord, setCoord] = useState<[number, number]>([NaN, NaN]);
@@ -8,10 +8,7 @@ export function useMouseMove() {
     window.addEventListener("mousemove", onMouseMove, false);
 
     function onMouseMove(e: MouseEvent) {
-      setCoord([
-        ((e.clientX - SCENE_CONSTANTS.left) / SCENE_CONSTANTS.width) * 2 - 1,
-        -((e.clientY - SCENE_CONSTANTS.top) / SCENE_CONSTANTS.height) * 2 + 1,
-      ]);
+      setCoord(getSceneMouseCoord(e));
     }
 
     return () => {
