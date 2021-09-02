@@ -28,6 +28,7 @@ import {
 } from "@react-three/drei";
 import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { ErrorBoundary } from "react-error-boundary";
 import axios from "axios";
 import {
@@ -419,6 +420,19 @@ function App() {
       Space: Shuffle the boxes within the sphere\n
       Click: Click in the sphere and highlight all the intersecting boxes!\n`,
     },
+    {
+      component: <SimpleLine />,
+      title: `This demonstrates that the closest point from any specific point to a line can be identified`,
+      details: `Controls:\n
+      Click any point on the plane\n
+      A ball is created on the plane where it has been clicked. From this point, the closest point to the\n
+      line is identified, and it then draws the line from clicked point to the closest point on the line.\n`,
+    },
+    {
+      component: <SimpleVRButton />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -455,10 +469,96 @@ function App() {
 
 export default App;
 
+function SimpleVRButton() {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    gl.xr.enabled = true;
+    return () => {
+      gl.xr.enabled = SCENE_CONSTANTS.xr;
+    };
+  }, [gl]);
+
+  const vrButton = useMemo(() => {
+    return VRButton.createButton(gl);
+  }, [gl]);
+
+  return null;
+}
+
+function SimpleLine() {
+  const { camera } = useThree();
+  const start = useMemo(() => new THREE.Vector3(-5, 0, 0), []);
+  const end = useMemo(() => new THREE.Vector3(5, 0, 0), []);
+  const line = useMemo(() => new THREE.Line3(start, end), [start, end]);
+  const plane = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(10, 10);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0x66ccff,
+      shininess: 100,
+      side: THREE.DoubleSide,
+    });
+    return new THREE.Mesh(geo, mat);
+  }, []);
+  const ball = useMemo(() => {
+    const geo = new THREE.SphereGeometry(0.2, 30, 30);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0x0000ff,
+      shininess: 100,
+      side: THREE.DoubleSide,
+    });
+    return new THREE.Mesh(geo, mat);
+  }, []);
+  const lineGeometry = useMemo(
+    () => new THREE.BufferGeometry().setFromPoints([start, end]),
+    [start, end]
+  );
+  const lineMaterial = useMemo(
+    () => new THREE.LineBasicMaterial({ color: 0xff0000 }),
+    []
+  );
+  const projGeometry = useMemo(
+    () => new THREE.BufferGeometry().setFromPoints([start, end]),
+    [start, end]
+  );
+  const projMaterial = useMemo(
+    () => new THREE.LineBasicMaterial({ color: 0x000000 }),
+    []
+  );
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const mouse = useMemo(() => new THREE.Vector2(), []);
+  const projectionPt = useMemo(() => new THREE.Vector3(), []);
+  const castProjection = useCallback(
+    (coord) => {
+      mouse.fromArray(coord);
+      raycaster.setFromCamera(mouse, camera);
+      const intersect = raycaster.intersectObject(plane)[0];
+      if (!intersect) return;
+      ball.position.set(...intersect.point.toArray());
+      line.closestPointToPoint(intersect.point, false, projectionPt);
+      projGeometry.setFromPoints([intersect.point, projectionPt]);
+    },
+    [raycaster, mouse, camera, plane, ball, line, projectionPt, projGeometry]
+  );
+
+  useClickHandler(castProjection);
+
+  return (
+    <>
+      <ambientLight />
+      <primitive object={plane} />
+      <primitive object={ball} />
+      <line_ geometry={lineGeometry} material={lineMaterial} />
+      <line_ geometry={projGeometry} material={projMaterial} />
+    </>
+  );
+}
+
 function SimpleRaycaster2() {
   const { camera } = useThree();
   const r = useMemo(() => 3, []);
   const nBoxes = useMemo(() => 2000, []);
+  const anglePerFrame = useMemo(() => 0.01, []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const mouse = useMemo(() => new THREE.Vector2(), []);
   const colors = useMemo(() => {
@@ -468,6 +568,7 @@ function SimpleRaycaster2() {
     return { normal: 0.2, highlight: 1 };
   }, []);
   const group = useRef<THREE.Group>(new THREE.Group());
+  const frame = useRef<THREE.Mesh>(new THREE.Mesh());
   const boxes = useMemo(() => {
     const boxes = [];
     for (let i = 0; i < nBoxes; i++) {
@@ -520,7 +621,6 @@ function SimpleRaycaster2() {
         }
       });
     },
-
     [boxes, raycaster, camera, mouse, colors, opacities]
   );
   useClickHandler(castColor);
@@ -536,11 +636,15 @@ function SimpleRaycaster2() {
       boxes.forEach((box) => boxGroup.remove(box));
     };
   }, [group, boxes]);
+  useFrame(() => {
+    group.current.rotation.y += anglePerFrame;
+    frame.current.rotation.y += anglePerFrame;
+  });
   return (
     <>
       <directionalLight position={[5, 10, 15]} castShadow />
       <group ref={group} />
-      <mesh>
+      <mesh ref={frame}>
         <sphereGeometry args={[r, 30, 30]} />
         <meshBasicMaterial wireframe />
       </mesh>

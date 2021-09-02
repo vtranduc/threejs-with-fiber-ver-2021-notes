@@ -12,4 +12,5 @@ export const SCENE_CONSTANTS = {
   cameraLookAt: new THREE.Vector3(0, 0, 0),
   isOrthographic: false,
   shadows: false,
+  xr: false,
 };
