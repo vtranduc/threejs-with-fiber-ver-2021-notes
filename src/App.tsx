@@ -26,7 +26,15 @@ import {
   OrthographicCamera,
   useHelper,
 } from "@react-three/drei";
-import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
+import {
+  hexToRgb,
+  rgbToHex,
+  atan,
+  randomInRange,
+  shuffleArray,
+  getSceneMouseCoord,
+  getSimpleSphere,
+} from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { ErrorBoundary } from "react-error-boundary";
@@ -48,10 +56,14 @@ import {
   useStateCallback,
   useMouseMove,
   useClickHandler,
+  useDrag,
 } from "./customHooks";
 import { ArrowCode } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
 import { ShadowEnabler } from "./components";
+import { debug } from "console";
+// import { PerspectiveCamera, Vector2, Vector3 } from "three";
+// import { isNullishCoalesce } from "typescript";
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
@@ -433,6 +445,16 @@ function App() {
       title: ``,
       details: ``,
     },
+    {
+      component: <Test123 />,
+      title: ``,
+      details: ``,
+    },
+    {
+      component: <Test12345 />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -468,6 +490,275 @@ function App() {
 }
 
 export default App;
+
+function Test12345() {
+  // const {gl} = useThree()
+
+  const abc = new THREE.Scene();
+
+  console.log("show me 777 ", abc, abc.fog);
+
+  // console.log('555555555555555555 ', gl.fog)
+
+  const box = useMemo(() => {
+    const geometry = new THREE.BoxGeometry();
+    const material1 = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+    const material2 = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+
+    geometry.groups[1].materialIndex = 0;
+
+    return new THREE.Mesh(geometry, [
+      material1,
+      material2,
+      material2,
+      material2,
+      material2,
+      material2,
+    ]);
+  }, []);
+
+  console.log("show me the box: ", box);
+
+  return (
+    <>
+      <ambientLight />
+      <primitive object={box} />;
+    </>
+  );
+}
+
+function Test123() {
+  const { camera } = useThree();
+
+  // const lookedAt = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+
+  // const grabbed = useMemo(() => new THREE.Vector2(), []);
+
+  // const coord = useMouseMove();
+
+  const target = useMemo(() => {
+    const target = getSimpleSphere([0.01, 30, 30], { color: 0x00ff00 });
+
+    const vector = new THREE.Vector3(0, 0, -1);
+
+    vector.applyEuler(camera.rotation);
+
+    target.position.copy(vector.add(camera.position));
+
+    return target;
+  }, [camera]);
+
+  const frozenTarget = useMemo(() => {
+    return target.clone();
+  }, [target]);
+
+  const frozenCamera = useMemo(() => camera.clone(), [camera]);
+
+  const ball = useMemo(() => getSimpleSphere([0.1, 30, 30]), []);
+
+  const wall = useMemo(() => {
+    const mesh = getSimpleSphere([20, 10, 10], { wireframe: true });
+    mesh.position.set(...camera.position.toArray());
+    return mesh;
+  }, [camera]);
+
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const mouse = useMemo(() => new THREE.Vector2(), []);
+  const touchPoint = useMemo(() => new THREE.Vector3(), []);
+  const mousePoint = useMemo(() => new THREE.Vector3(), []);
+  const quaternion = useMemo(() => new THREE.Quaternion(), []);
+  const euler = useMemo(() => new THREE.Euler(), []);
+
+  const { start, coord } = useDrag();
+
+  // const []
+
+  const intersectWall = useCallback(
+    (
+      coord: [number, number],
+      camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
+    ) => {
+      mouse.fromArray(coord);
+      raycaster.setFromCamera(mouse, camera);
+      return raycaster.intersectObject(wall)[0]?.point;
+    },
+    [mouse, raycaster, wall]
+  );
+
+  const arubeki = useCallback(() => {
+    // console.log("here are: ", touchPoint, mousePoint);
+
+    quaternion.setFromUnitVectors(
+      mousePoint.clone().sub(camera.position).normalize(),
+      touchPoint.clone().sub(camera.position).normalize()
+    );
+
+    euler.setFromQuaternion(quaternion);
+
+    // console.log("show me: ", euler);
+
+    // debugger;
+
+    console.log(
+      "FROZEN ROTATION: ",
+      frozenCamera.rotation.x,
+      frozenCamera.rotation.y,
+      frozenCamera.rotation.z
+    );
+
+    // debugger;
+
+    camera.rotation.set(
+      frozenCamera.rotation.x + euler.x,
+      frozenCamera.rotation.y + euler.y,
+      frozenCamera.rotation.z + euler.z
+    );
+
+    // camera.rotation.x += 0.001;
+  }, [touchPoint, mousePoint, quaternion, euler, camera, frozenCamera]);
+
+  useEffect(() => {
+    if (start) ball.visible = true;
+    else {
+      ball.visible = false;
+      frozenCamera.rotation.set(
+        camera.rotation.x,
+        camera.rotation.y,
+        camera.rotation.z
+      );
+      frozenTarget.position.copy(target.position);
+    }
+  }, [start, ball, camera, frozenCamera, frozenTarget, target]);
+
+  useEffect(() => {
+    if (!start) return;
+    const point = intersectWall(start, camera);
+    if (!point) return;
+    ball.position.copy(point);
+    touchPoint.copy(point.sub(frozenCamera.position).normalize());
+    // initRotation.copy(camera.rotation);
+
+    // console.log(
+    //   "binto ha mou ate nai: ",
+    //   camera.rotation.x,
+    //   camera.rotation.y,
+    //   camera.rotation.z
+    // );
+
+    // frozenCamera.rotation.set(
+    //   camera.rotation.x,
+    //   camera.rotation.y,
+    //   camera.rotation.z
+    // );
+
+    // frozenCamera.copy(camera)
+
+    // frozenCamera = camera.clone()
+  }, [start, touchPoint, intersectWall, camera, frozenCamera, ball]);
+
+  const v1 = useMemo(() => new THREE.Vector2(), []);
+  const v2 = useMemo(() => new THREE.Vector2(), []);
+
+  const portHope2 = useCallback(() => {
+    v1.set(touchPoint.x, touchPoint.z);
+    v2.set(mousePoint.x, mousePoint.z);
+
+    const angleXZ = 0 + (v2.angle() - v1.angle());
+
+    v1.set(mousePoint.y, mousePoint.z);
+    v2.set(touchPoint.y, touchPoint.z);
+
+    const angleYZ = 0 + (v2.angle() - v1.angle());
+
+    return { angleXZ, angleYZ };
+  }, [touchPoint, mousePoint, v1, v2]);
+
+  const portHope = useCallback(() => {
+    // console.log("mecha kucha");
+
+    // console.log("nyamu nyamu nya", touchPoint, mousePoint);
+
+    // touchPoint
+
+    // mouse
+
+    const { angleXZ, angleYZ } = portHope2();
+
+    // camera.rotation.set(
+    //   frozenCamera.rotation.x,
+    //   frozenCamera.rotation.y + angleXZ,
+    //   frozenCamera.rotation.z
+    // );
+
+    v1.set(frozenCamera.position.x, frozenCamera.position.z);
+    v2.set(frozenTarget.position.x, frozenTarget.position.z);
+    v2.rotateAround(v1, -angleXZ);
+    target.position.x = v2.x;
+    target.position.z = v2.y;
+
+    // v1.set(frozenCamera.position.y, frozenCamera.position.z);
+    // v2.set(frozenTarget.position.y, frozenTarget.position.z);
+
+    // console.log("angle is this: ", (angleYZ * 180) / Math.PI);
+
+    // v2.rotateAround(v1, angleYZ);
+    // target.position.y = v2.x;
+    // target.position.z = v2.y;
+
+    camera.lookAt(target.position);
+
+    // camera
+  }, [
+    touchPoint,
+    mousePoint,
+    portHope2,
+    camera,
+    frozenCamera,
+    target,
+    v1,
+    v2,
+    frozenTarget,
+  ]);
+
+  useEffect(() => {
+    if (!coord) return;
+    const point = intersectWall(coord, frozenCamera);
+
+    // console.log(
+    //   "show me the point!",
+    //   point,
+    //   frozenCamera,
+    //   intersectWall(coord, camera)
+    // );
+
+    if (!point) return;
+    mousePoint.copy(point.sub(frozenCamera.position).normalize());
+
+    // ------------- real part --------------------
+
+    // arubeki();
+
+    portHope();
+  }, [
+    coord,
+    mousePoint,
+    intersectWall,
+    arubeki,
+    frozenCamera,
+    camera,
+    portHope,
+  ]);
+
+  return (
+    <>
+      <directionalLight position={[5, 10, 15]} />
+      <primitive object={frozenCamera} />
+      <primitive object={wall} />
+      <primitive object={ball} />
+      <primitive object={target} />
+    </>
+  );
+}
 
 function SimpleVRButton() {
   const { gl } = useThree();
@@ -2605,6 +2896,7 @@ function SimpleScene({
               1000,
             ]}
             position={SCENE_CONSTANTS.cameraPosition.toArray()}
+            rotation={[-Math.PI / 4, 0, 0]}
             makeDefault={!isOrthographic}
           />
           <OrthographicCamera
