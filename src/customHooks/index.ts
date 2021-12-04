@@ -7,3 +7,8 @@ export * from "./useShadow";
 export * from "./useStateCallback";
 export * from "./useMouseMove";
 export * from "./useClickHandler";
+export * from "./useText";
+export * from "./useGizmoControl";
+export * from "./useMouseMoveHandler";
+export * from "./useMouseDown";
+export * from "./useMouseUp";

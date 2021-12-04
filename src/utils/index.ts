@@ -3,6 +3,8 @@ import { Vector3 } from "three";
 import { Compass } from "../types";
 import { SCENE_CONSTANTS } from "../constants";
 
+export * from "./gizmo";
+
 export function hexToRgb(hex: number) {
   return hexStrToRgb(hexNumToStr(hex));
 

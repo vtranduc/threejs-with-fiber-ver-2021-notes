@@ -26,8 +26,17 @@ import {
   OrthographicCamera,
   useHelper,
 } from "@react-three/drei";
-import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
+import {
+  hexToRgb,
+  rgbToHex,
+  atan,
+  randomInRange,
+  shuffleArray,
+  // TranslateGizmo,
+  // TransformControl,
+} from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { ErrorBoundary } from "react-error-boundary";
 import axios from "axios";
@@ -48,8 +57,11 @@ import {
   useStateCallback,
   useMouseMove,
   useClickHandler,
+  useClickHandlerConditionally,
+  useText,
+  useGizmoControl,
 } from "./customHooks";
-import { ArrowCode } from "./types";
+import { ArrowCode, GizmoAxis, GizmoDirectionalAxis } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
 import { ShadowEnabler } from "./components";
 
@@ -433,6 +445,16 @@ function App() {
       title: ``,
       details: ``,
     },
+    // {
+    //   component: <SimpleCustomGizmo />,
+    //   title: ``,
+    //   details: ``,
+    // },
+    {
+      component: <SimpleCustomGizmo2 />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -468,6 +490,301 @@ function App() {
 }
 
 export default App;
+
+// enum GizmoAxis {
+//   X = "X",
+//   Y = "Y",
+//   Z = "Z",
+//   XY = "XY",
+//   XZ = "XZ",
+//   YZ = "YZ",
+// }
+
+// interface GizmoComponentSpec {
+//   component: GizmoAxis;
+//   color: number;
+//   file: string;
+// }
+
+function SimpleCustomGizmo2() {
+  const { camera } = useThree();
+
+  const { control } = useGizmoControl(camera);
+
+  const mesh1 = useMemo(() => {
+    const geo = new THREE.BoxGeometry(0.5, 1, 1.5);
+    geo.translate(-2, 1, -0.5);
+    geo.rotateX(Math.PI / 4);
+    geo.rotateY(Math.PI / 2);
+
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0xffff00,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.y = 1.5;
+    mesh.scale.x = 0.5;
+    mesh.scale.x = 2;
+    mesh.rotateY(-Math.PI / 8);
+    mesh.rotateX(Math.PI / 2);
+    mesh.rotateZ(Math.PI / 4);
+    // mesh.position.set(0, 1, 2);
+
+    mesh.position.set(1, 3, 2);
+
+    return mesh;
+  }, []);
+
+  // useFrame(() => {
+  //   mesh1.rotation.y += 0.01;
+  // });
+
+  const mesh2 = useMemo(() => {
+    const geo = new THREE.BoxGeometry(0.5, 1, 1.5);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0x00ff00,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.z = 1.5;
+    mesh.rotateY(-Math.PI / 4);
+    mesh.rotateX(-Math.PI / 4);
+    mesh.position.set(2, 0, -2);
+    return mesh;
+  }, []);
+
+  const mesh3 = useMemo(() => {
+    const geo = new THREE.CylinderGeometry(0.1, 0.5, 0.5, 30);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0xff0000,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.z = 1.5;
+    mesh.rotateY(Math.PI / 2);
+    mesh.rotateX(Math.PI / 4);
+    mesh.position.set(-3, 0, -3);
+    return mesh;
+  }, []);
+
+  // useFrame(() => {
+  //   control.setObject(mesh1);
+  // });
+
+  const { meshes, meshKeys } = useMemo(() => {
+    const meshes = { mesh1, mesh2, mesh3 };
+    const meshKeys = Object.keys(meshes) as (keyof typeof meshes)[];
+    return { meshes, meshKeys };
+  }, [mesh1, mesh2, mesh3]);
+
+  const [target, setTarget] = useState<keyof typeof meshes | null>(null);
+
+  // useEffect(() => {
+  //   if (!target) return;
+  //   const index = meshKeys.findIndex(
+  //     (key) => meshes[key].uuid === control.targetUuid
+  //   );
+  //   control.setObject(meshes[meshKeys[(index + 1) % meshKeys.length]]);
+  // }, [target, control, meshes, meshKeys]);
+
+  useEffect(() => {
+    setTarget(meshKeys[0]);
+  }, [meshKeys]);
+
+  const switchTarget = useCallback(() => {
+    const index = meshKeys.findIndex(
+      (key) => meshes[key].uuid === control.targetUuid
+    );
+    setTarget(meshKeys[index < 0 ? 0 : (index + 1) % meshKeys.length]);
+  }, [meshKeys, control, meshes]);
+
+  const alignXYZ = useCallback(() => {
+    control.rotateToAlignXYZ();
+  }, [control]);
+
+  const alignToTarget = useCallback(() => {
+    control.rotateByTarget();
+  }, [control]);
+
+  useKeyHandler("KeyJ", switchTarget);
+  useKeyHandler("KeyK", alignXYZ);
+  useKeyHandler("KeyL", alignToTarget);
+
+  useEffect(() => {
+    // console.log("new target: ", target);
+    if (!target) return control.unsetTarget();
+    control.setTarget(meshes[target]);
+  }, [target, control, meshes]);
+
+  return (
+    <>
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[5, 10, 15]} castShadow />
+      <primitive object={control} />
+      <primitive object={mesh1} />
+      <primitive object={mesh2} />
+      <primitive object={mesh3} />
+    </>
+  );
+}
+
+// function SimpleCustomGizmo() {
+//   const { camera } = useThree();
+//   const [loaded, setLoaded] = useState<boolean>(false);
+//   const [axis, setAxis] = useState<GizmoAxis>(GizmoDirectionalAxis.X);
+//   const [dragging, setDragging] = useState<boolean>(false);
+//   const textColor = useMemo(() => 0x000000, []);
+
+//   const testGroup = useMemo(() => new THREE.Group(), []);
+
+//   const control = useMemo(() => {
+//     // console.log("how many creationg?");
+//     return new TransformControl(camera, testGroup);
+//   }, [camera, testGroup]);
+//   const text = useText((dragging && axis) || "None", textColor);
+
+//   useEffect(() => {
+//     text.position.z = -5;
+//   }, [text]);
+
+//   useEffect(() => {
+//     control.build().then(() => setLoaded(true));
+//   }, [control]);
+
+//   const changeAxis = useCallback(() => {
+//     const axes = Object.values(GizmoDirectionalAxis) as GizmoAxis[];
+//     const index = axes.findIndex((axisItem) => axis === axisItem);
+//     if (index !== -1) setAxis(axes[(index + 1) % axes.length]);
+//   }, [axis]);
+
+//   const onClick = useCallback(
+//     (coord: [number, number]) => control.onMouseClick(coord),
+//     [control]
+//   );
+
+//   useClickHandlerConditionally(onClick, loaded);
+
+//   useKeyHandler("Space", changeAxis);
+
+//   useKeyHandler("Enter", () => setDragging(!dragging));
+
+//   const coord = useMouseMove();
+
+//   useEffect(() => {
+//     control.onMouseMove(coord);
+
+//     // console.log("scrolling: ", control.abcTest);
+//   }, [coord, control, testGroup]);
+
+//   const boundedMesh = useMemo(() => {
+//     const geo = new THREE.BoxGeometry(1, 2, 3);
+//     const mat = new THREE.MeshPhongMaterial({
+//       side: THREE.DoubleSide,
+//       color: 0xffff00,
+//       shininess: 100,
+//     });
+//     const mesh = new THREE.Mesh(geo, mat);
+//     mesh.scale.z = 1.5;
+//     mesh.rotateY(Math.PI / 4);
+//     mesh.rotateX(Math.PI / 4);
+
+//     mesh.position.set(0, 1, 2);
+
+//     return mesh;
+//   }, []);
+
+//   const { helper, bbox, ball1, ball2, ball3, ball4, ball5, ball6 } =
+//     useMemo(() => {
+//       const bbox = new THREE.Box3().setFromObject(boundedMesh);
+
+//       // console.log("show the bbox: ", bbox);
+
+//       boundedMesh.geometry.computeBoundingBox();
+
+//       // console.log("show the geo 888888: ", boundedMesh.geometry.boundingBox);
+
+//       // boundedMesh.boundingBox
+
+//       // const helper = new THREE.Box3Helper(bbox, new THREE.Color(0x000000));
+
+//       const geoBbox = boundedMesh.geometry.boundingBox || bbox;
+
+//       const helper = new THREE.Box3Helper(geoBbox, new THREE.Color(0x000000));
+
+//       const geo = new THREE.SphereGeometry(0.1, 30, 30);
+//       const mat = new THREE.MeshPhongMaterial({
+//         side: THREE.DoubleSide,
+//         color: 0xff0000,
+//         shininess: 100,
+//       });
+//       const mat2 = new THREE.MeshPhongMaterial({
+//         side: THREE.DoubleSide,
+//         color: 0x0000ff,
+//         shininess: 100,
+//       });
+//       const mesh = new THREE.Mesh(geo, mat);
+
+//       const ball1 = mesh.clone();
+//       const ball2 = mesh.clone();
+
+//       ball1.position.copy(bbox.min);
+//       ball2.position.copy(bbox.max);
+
+//       const mesh2 = new THREE.Mesh(geo, mat2);
+
+//       const ball3 = mesh2.clone();
+//       const ball4 = mesh2.clone();
+
+//       ball3.position.copy(geoBbox.min);
+//       ball4.position.copy(geoBbox.max);
+
+//       // *****************************************
+
+//       boundedMesh.updateWorldMatrix(false, false);
+
+//       const ball5 = mesh2.clone();
+//       const ball6 = mesh2.clone();
+
+//       ball5.material.color.set(0x00ff00);
+//       ball6.material.color.set(0x00ff00);
+
+//       ball5.position.copy(
+//         geoBbox.min.clone().applyMatrix4(boundedMesh.matrixWorld)
+//       );
+//       ball6.position.copy(
+//         geoBbox.max.clone().applyMatrix4(boundedMesh.matrixWorld)
+//       );
+
+//       // *****************************************
+
+//       const rotation = new THREE.Euler(Math.PI / 4, Math.PI / 8, Math.PI / 16);
+
+//       // console.log("show the ball1", ball1);
+
+//       return { helper, bbox, ball1, ball2, ball3, ball4, ball5, ball6 };
+//     }, [boundedMesh]);
+
+//   return (
+//     <>
+//       <ambientLight intensity={0.2} />
+//       <directionalLight position={[5, 10, 15]} castShadow />
+//       {/* <primitive object={ball1} />
+//       <primitive object={ball2} />
+//       <primitive object={ball3} />
+//       <primitive object={ball4} />
+//       <primitive object={ball5} />
+//       <primitive object={ball6} /> */}
+//       {/* <primitive object={helper} />
+//       <primitive object={boundedMesh} /> */}
+//       <primitive object={testGroup} />
+//       <primitive object={text} />
+//       {/* <primitive object={control.gizmo} />; */}
+//     </>
+//   );
+// }
 
 function SimpleVRButton() {
   const { gl } = useThree();
@@ -2604,6 +2921,7 @@ function SimpleScene({
               1,
               1000,
             ]}
+            // lookAt={[=0, 0, 0]}
             position={SCENE_CONSTANTS.cameraPosition.toArray()}
             makeDefault={!isOrthographic}
           />
@@ -2646,7 +2964,7 @@ function ErrorFallback({
   );
 }
 
-type IncludeDummy<T> = T | Dummy;
+// type IncludeDummy<T> = T | Dummy;
 
 class Dummy {
   public update() {}
@@ -2663,12 +2981,13 @@ function CameraControls() {
   } = useThree();
 
   // Ref to the controls, so that we can update them on every frame using useFrame
-  const controls = useRef<IncludeDummy<OrbitControls>>(new Dummy());
-  useFrame(() => controls.current.update());
+  // const controls = useRef<IncludeDummy<OrbitControls>>(new Dummy());
+  // useFrame(() => controls.current.update());
   return (
     <orbitControls
-      ref={controls}
+      // ref={controls}
       args={[camera, domElement]}
+      enabled={false}
       // enableZoom={false}
       // maxAzimuthAngle={Math.PI / 4}
       // maxPolarAngle={Math.PI}
