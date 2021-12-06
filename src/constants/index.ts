@@ -13,4 +13,5 @@ export const SCENE_CONSTANTS = {
   isOrthographic: false,
   shadows: false,
   xr: false,
+  orbitControl: true,
 };

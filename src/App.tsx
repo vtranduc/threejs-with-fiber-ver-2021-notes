@@ -8,6 +8,8 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import { useSelector, ReactReduxContext } from "react-redux";
+import { RootState } from "./reducers";
 import {
   Canvas,
   useFrame,
@@ -48,10 +50,12 @@ import {
   useStateCallback,
   useMouseMove,
   useClickHandler,
+  useGizmoControl,
 } from "./customHooks";
 import { ArrowCode } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
 import { ShadowEnabler } from "./components";
+import { Provider } from "react-redux";
 
 extend({ OrbitControls, VertexNormalsHelper, Line_: THREE.Line });
 
@@ -433,6 +437,11 @@ function App() {
       title: ``,
       details: ``,
     },
+    {
+      component: <SimpleCustomGizmo />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -468,6 +477,102 @@ function App() {
 }
 
 export default App;
+
+function SimpleCustomGizmo() {
+  const { camera } = useThree();
+  const { scene, setTarget: setControlTarget, uuid } = useGizmoControl(camera);
+  const [target, setTarget] = useState<keyof typeof meshes | null>(null);
+
+  const mesh0 = useMemo(() => {
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0xe01ceb,
+      shininess: 100,
+    });
+    return new THREE.Mesh(geo, mat);
+  }, []);
+
+  const mesh1 = useMemo(() => {
+    const geo = new THREE.BoxGeometry(0.5, 1, 1.5);
+    geo.translate(-2, 1, -0.5);
+    geo.rotateX(Math.PI / 4);
+    geo.rotateY(Math.PI / 2);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0xffff00,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.set(1.5, 0.5, 2);
+    mesh.rotation.set(-Math.PI / 2, Math.PI / 16, Math.PI / 4);
+    mesh.position.set(-3, -3, 3);
+    return mesh;
+  }, []);
+
+  const mesh2 = useMemo(() => {
+    const geo = new THREE.BoxGeometry(0.5, 1, 1.5);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0x00ff00,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.z = 1.5;
+    mesh.rotateY(-Math.PI / 4);
+    mesh.rotateX(-Math.PI / 4);
+    mesh.position.set(2, 0, -2);
+    return mesh;
+  }, []);
+
+  const mesh3 = useMemo(() => {
+    const geo = new THREE.CylinderGeometry(0.1, 0.5, 0.5, 30);
+    const mat = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+      color: 0xff0000,
+      shininess: 100,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.z = 1.5;
+    mesh.rotateY(Math.PI / 2);
+    mesh.rotateX(Math.PI / 4);
+    mesh.position.set(-3, 0, -3);
+    return mesh;
+  }, []);
+
+  const { meshes, meshKeys } = useMemo(() => {
+    const meshes = { mesh0, mesh1, mesh2, mesh3 };
+    const meshKeys = Object.keys(meshes) as (keyof typeof meshes)[];
+    return { meshes, meshKeys };
+  }, [mesh0, mesh1, mesh2, mesh3]);
+
+  useEffect(() => {
+    setTarget(meshKeys[0]);
+  }, [meshKeys]);
+
+  const switchTarget = useCallback(() => {
+    const index = meshKeys.findIndex((key) => meshes[key].uuid === uuid);
+    setTarget(meshKeys[index < 0 ? 0 : (index + 1) % meshKeys.length]);
+  }, [meshKeys, uuid, meshes]);
+
+  useKeyHandler("Space", switchTarget);
+
+  useEffect(() => {
+    setControlTarget(target && meshes[target]);
+  }, [target, meshes, setControlTarget]);
+
+  return (
+    <>
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[5, 10, 15]} castShadow />
+      <primitive object={scene} />
+      <primitive object={mesh0} />
+      <primitive object={mesh1} />
+      <primitive object={mesh2} />
+      <primitive object={mesh3} />
+    </>
+  );
+}
 
 function SimpleVRButton() {
   const { gl } = useThree();
@@ -2595,32 +2700,40 @@ function SimpleScene({
       }}
     >
       <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Canvas shadows={SCENE_CONSTANTS.shadows}>
-          <PerspectiveCamera
-            ref={perspectiveCamera}
-            args={[
-              SCENE_CONSTANTS.fov,
-              SCENE_CONSTANTS.width / SCENE_CONSTANTS.height,
-              1,
-              1000,
-            ]}
-            position={SCENE_CONSTANTS.cameraPosition.toArray()}
-            makeDefault={!isOrthographic}
-          />
-          <OrthographicCamera
-            args={[-300, 300, 400, -400, 1, 1000]}
-            zoom={5}
-            makeDefault={isOrthographic}
-          />
-          <CameraControls />
-          {showGrid && (
-            <gridHelper
-              args={[gridProperties.size, gridProperties.divisions]}
-            />
+        <ReactReduxContext.Consumer>
+          {({ store }) => (
+            <Canvas shadows={SCENE_CONSTANTS.shadows}>
+              <Provider store={store}>
+                <>
+                  <PerspectiveCamera
+                    ref={perspectiveCamera}
+                    args={[
+                      SCENE_CONSTANTS.fov,
+                      SCENE_CONSTANTS.width / SCENE_CONSTANTS.height,
+                      1,
+                      1000,
+                    ]}
+                    position={SCENE_CONSTANTS.cameraPosition.toArray()}
+                    makeDefault={!isOrthographic}
+                  />
+                  <OrthographicCamera
+                    args={[-300, 300, 400, -400, 1, 1000]}
+                    zoom={5}
+                    makeDefault={isOrthographic}
+                  />
+                  <CameraControls />
+                  {showGrid && (
+                    <gridHelper
+                      args={[gridProperties.size, gridProperties.divisions]}
+                    />
+                  )}
+                  <color attach="background" args={[backgroundColor]} />
+                  {children}
+                </>
+              </Provider>
+            </Canvas>
           )}
-          <color attach="background" args={[backgroundColor]} />
-          {children}
-        </Canvas>
+        </ReactReduxContext.Consumer>
       </ErrorBoundary>
     </div>
   );
@@ -2646,29 +2759,23 @@ function ErrorFallback({
   );
 }
 
-type IncludeDummy<T> = T | Dummy;
-
-class Dummy {
-  public update() {}
-}
-
 function CameraControls() {
   // Get a reference to the Three.js Camera, and the canvas html element.
   // We need these to setup the OrbitControls class.
   // https://threejs.org/docs/#examples/en/controls/OrbitControls
+
+  const enabled = useSelector((state: RootState) => state.orbitControl.enabled);
 
   const {
     camera,
     gl: { domElement },
   } = useThree();
 
-  // Ref to the controls, so that we can update them on every frame using useFrame
-  const controls = useRef<IncludeDummy<OrbitControls>>(new Dummy());
-  useFrame(() => controls.current.update());
   return (
     <orbitControls
-      ref={controls}
+      // ref={controls}
       args={[camera, domElement]}
+      enabled={enabled}
       // enableZoom={false}
       // maxAzimuthAngle={Math.PI / 4}
       // maxPolarAngle={Math.PI}
