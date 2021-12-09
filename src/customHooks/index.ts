@@ -12,3 +12,4 @@ export * from "./useGizmoControl";
 export * from "./usePointerMove";
 export * from "./usePointerDown";
 export * from "./usePointerUp";
+export * from "./useMouseWheel";

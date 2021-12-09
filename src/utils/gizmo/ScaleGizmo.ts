@@ -25,6 +25,7 @@ export class ScaleGizmo extends Gizmo {
   private topRadius = 0.15;
   private diagLine3s: ScaleGizmoDiagLine3s;
   private dimension: THREE.Vector3;
+  private geoDimension = new THREE.Vector3();
   private scaleUtils: {
     vector: THREE.Vector3;
     size: THREE.Vector3;
@@ -144,9 +145,9 @@ export class ScaleGizmo extends Gizmo {
   private updateGeometry() {
     const { vector } = this.scaleUtils;
 
-    const xDistance = (this.dimension.x + this.handleWidth) / 2;
-    const yDistance = this.dimension.y / 2;
-    const zDistance = (this.dimension.z + this.handleWidth) / 2;
+    const xDistance = (this.geoDimension.x + this.handleWidth) / 2;
+    const yDistance = this.geoDimension.y / 2;
+    const zDistance = (this.geoDimension.z + this.handleWidth) / 2;
 
     this.handleEntries.forEach(([axis, { geometry }]) => {
       geometry.computeBoundingBox();
@@ -165,11 +166,19 @@ export class ScaleGizmo extends Gizmo {
           break;
         case GizmoDirectionalAxis.X:
         case GizmoNegativeDirectionalAxis.X:
-          scale = [this.handleWidth / vector.x, 1, this.dimension.z / vector.z];
+          scale = [
+            this.handleWidth / vector.x,
+            1,
+            this.geoDimension.z / vector.z,
+          ];
           break;
         case GizmoDirectionalAxis.Z:
         case GizmoNegativeDirectionalAxis.Z:
-          scale = [this.dimension.x / vector.x, 1, this.handleWidth / vector.z];
+          scale = [
+            this.geoDimension.x / vector.x,
+            1,
+            this.handleWidth / vector.z,
+          ];
           break;
         case GizmoDirectionalAxis.Y:
           scale = [1, this.topHeight / vector.y, 1];
@@ -264,8 +273,15 @@ export class ScaleGizmo extends Gizmo {
     this.updateGeometryAndLine3s();
   }
 
+  public updateScaleFactor() {
+    super.updateScaleFactor();
+    this.geoDimension.copy(this.dimension).divideScalar(this.scaleFactor);
+    this.updateGeometry();
+  }
+
   private setDimension(dimension: THREE.Vector3, update = true) {
     this.dimension.copy(dimension);
+    this.geoDimension.copy(dimension).divideScalar(this.scaleFactor);
     if (update) this.updateGeometryAndLine3s();
   }
 

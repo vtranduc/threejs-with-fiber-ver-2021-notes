@@ -78,6 +78,7 @@ export class TransformControl {
   public changeMode(mode: GizmoMode) {
     this.mode = mode;
     this.addGizmo();
+    this.gizmo.updateScaleFactor();
     this.gizmo.setFromTarget();
   }
 
@@ -108,6 +109,13 @@ export class TransformControl {
 
   public rotateToAlignXYZ(update = true) {
     this.setRotation(this.utils.rotation.set(0, 0, 0), update);
+  }
+
+  // Size control
+
+  public setScaleFactor(scaleFactor: number) {
+    this.gizmoUtil.scaleFactor = scaleFactor;
+    this.gizmo.updateScaleFactor();
   }
 
   // Private helpers

@@ -8,9 +8,10 @@ import {
   useKeyDownConditionally,
   usePointerDownConditionally,
   usePointerUpConditionally,
+  useMouseWheelConditionally,
 } from "./index";
 import { GizmoMode } from "../types";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ArrowCode } from "../types";
 
@@ -20,13 +21,13 @@ const hotkeys = {
   modeChange: "Enter",
 };
 
-export function useGizmoControl(
-  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
-) {
+export function useGizmoControl() {
+  const { camera } = useThree();
   const dispatch = useDispatch();
   const [loaded, setLoaded] = useState<boolean>(false);
   const [mode, setMode] = useState<GizmoMode>(GizmoMode.Scale);
   const euler = useMemo(() => new THREE.Euler(), []);
+  const vector = useMemo(() => new THREE.Vector3(), []);
   const control = useMemo(() => {
     const control = new TransformControl(camera);
     control.build().then(() => setLoaded(true));
@@ -55,6 +56,14 @@ export function useGizmoControl(
     [control]
   );
 
+  const updateScaleFactor = useCallback(() => {
+    const scaleFactor = 8;
+    const scale =
+      vector.subVectors(camera.position, control.scene.position).length() /
+      scaleFactor;
+    control.setScaleFactor(scale);
+  }, [vector, control, camera]);
+
   const setTarget = useCallback(
     (object: THREE.Object3D | null) =>
       object ? control.setTarget(object) : control.unsetTarget(),
@@ -82,6 +91,11 @@ export function useGizmoControl(
     control.changeMode(mode);
   }, [mode, control]);
 
+  useEffect(() => {
+    updateScaleFactor();
+  }, [updateScaleFactor]);
+
+  useMouseWheelConditionally(updateScaleFactor, loaded);
   usePointerDownConditionally(onMouseDown, loaded);
   usePointerUpConditionally(onMouseUp, loaded);
   usePointerMoveConditionally(mouseMoveHandler, loaded);

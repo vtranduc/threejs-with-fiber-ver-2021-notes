@@ -479,8 +479,7 @@ function App() {
 export default App;
 
 function SimpleCustomGizmo() {
-  const { camera } = useThree();
-  const { scene, setTarget: setControlTarget, uuid } = useGizmoControl(camera);
+  const { scene, setTarget: setControlTarget, uuid } = useGizmoControl();
   const [target, setTarget] = useState<keyof typeof meshes | null>(null);
 
   const mesh0 = useMemo(() => {

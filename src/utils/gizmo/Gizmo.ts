@@ -147,6 +147,12 @@ export abstract class Gizmo extends THREE.Group {
     );
   }
 
+  // Adjust the size of gizmo
+
+  public updateScaleFactor() {
+    this.scale.set(this.scaleFactor, this.scaleFactor, this.scaleFactor);
+  }
+
   // Find which handle has been clicked
 
   private intersectHandle() {
@@ -230,6 +236,10 @@ export abstract class Gizmo extends THREE.Group {
 
   get loader() {
     return this.gizmoUtil.loader;
+  }
+
+  get scaleFactor() {
+    return this.gizmoUtil.scaleFactor;
   }
 
   // For Gizmo's transform. Not to be used from within TransformControl class
@@ -337,6 +347,7 @@ export class GizmoUtil {
   private baseRotation = new THREE.Euler();
   private raycaster = new THREE.Raycaster();
   private dracoLoader = new DRACOLoader();
+  public scaleFactor: number;
 
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
@@ -344,6 +355,7 @@ export class GizmoUtil {
   ) {
     this.camera = camera;
     this.object = object;
+    this.scaleFactor = 1;
     this.dracoLoader.setDecoderPath(
       "https://www.gstatic.com/draco/v1/decoders/"
     );
