@@ -489,8 +489,28 @@ function SimpleCustomGizmo() {
       color: 0xe01ceb,
       shininess: 100,
     });
-    return new THREE.Mesh(geo, mat);
+
+    const mesh = new THREE.Mesh(geo, mat);
+
+    mesh.position.set(5, 3, 2);
+    mesh.scale.set(0.5, 2, 3);
+    mesh.rotation.set(Math.PI / 8, -Math.PI / 8, Math.PI / 4);
+
+    // group.add(mesh);
+    // return group;
+    return mesh;
   }, []);
+
+  const group = useMemo(() => {
+    const group = new THREE.Group();
+
+    group.position.set(-0.5, 1, 1.5);
+    group.rotation.set(Math.PI / 8, -Math.PI / 8, Math.PI / 4);
+    group.scale.set(0.5, 1.5, 2);
+
+    group.add(mesh0);
+    return group;
+  }, [mesh0]);
 
   const mesh1 = useMemo(() => {
     const geo = new THREE.BoxGeometry(0.5, 1, 1.5);
@@ -565,7 +585,7 @@ function SimpleCustomGizmo() {
       <ambientLight intensity={0.2} />
       <directionalLight position={[5, 10, 15]} castShadow />
       <primitive object={scene} />
-      <primitive object={mesh0} />
+      <primitive object={group} />
       <primitive object={mesh1} />
       <primitive object={mesh2} />
       <primitive object={mesh3} />

@@ -88,26 +88,57 @@ export class RotateGizmo extends Gizmo {
 
   public transformTarget() {
     const { quaternion, vector1, vector2 } = this.rotateUtils;
-    quaternion.setFromUnitVectors(this.dragStart.unitVector, this.dragPoint);
-    this.target.rotation.copy(this.dragStart.rotation);
-    this.target.applyQuaternion(quaternion);
-    vector1.setFromMatrixPosition(this.initialTransform);
-    this.target.position.copy(vector1);
-    vector1.subVectors(this.dragStart.center, vector1);
-    vector2.copy(vector1);
-    vector1.applyQuaternion(quaternion).sub(vector2);
-    this.target.position.sub(vector1);
+    if (this.pivoted) {
+      quaternion.setFromUnitVectors(this.dragStart.unitVector, this.dragPoint);
+      this.target.rotation.copy(this.dragStart.rotation);
+      this.target.applyQuaternion(quaternion);
+      vector1.setFromMatrixPosition(this.initialTransform);
+      this.target.position.copy(vector1);
+      vector1.subVectors(this.dragStart.center, vector1);
+      vector2.copy(vector1);
+      vector1.applyQuaternion(quaternion).sub(vector2);
+      this.target.position.sub(vector1);
+    } else {
+      let angle = this.dragStart.unitVector.angleTo(this.dragPoint);
+      vector1.crossVectors(this.dragStart.unitVector, this.dragPoint);
+      switch (this.axis) {
+        case GizmoPlanarAxis.X:
+          this.getPlaneNormal(this.axis, vector2);
+          if (vector1.dot(vector2) < 0) angle *= -1;
+          this.target.rotation.x = this.dragStart.rotation.x + angle;
+          break;
+        case GizmoPlanarAxis.Y:
+          this.getPlaneNormal(this.axis, vector2);
+          if (vector1.dot(vector2) < 0) angle *= -1;
+          this.target.rotation.y = this.dragStart.rotation.y + angle;
+          break;
+        case GizmoPlanarAxis.Z:
+          this.getPlaneNormal(this.axis, vector2);
+          if (vector1.dot(vector2) < 0) angle *= -1;
+          this.target.rotation.z = this.dragStart.rotation.z + angle;
+          break;
+        default:
+      }
+    }
     return true;
   }
 
   public setFromTarget(type?: GizmoUpdateType) {
     if (type === GizmoUpdateType.Drag) return true;
-    this.setRotation(this.getBaseRotation(this.rotateUtils.rotation));
-    if (type === GizmoUpdateType.Rotate) return true;
-    const { vector1, box3 } = this.rotateUtils;
-    box3.setFromObject(this.target);
-    box3.getCenter(vector1);
-    this.setPosition(vector1);
+    if (this.pivoted) {
+      this.setRotation(this.getBaseRotation(this.rotateUtils.rotation));
+      if (type === GizmoUpdateType.Rotate) return true;
+      const { vector1, box3 } = this.rotateUtils;
+      box3.setFromObject(this.target);
+      box3.getCenter(vector1);
+      this.setPosition(vector1);
+    } else {
+      if (type === GizmoUpdateType.Rotate) return true; // Only 1 rotation allowed
+      const { vector1, rotation, quaternion } = this.rotateUtils;
+      this.target.getWorldQuaternion(quaternion);
+      this.setRotation(rotation.setFromQuaternion(quaternion));
+      this.setPosition(this.target.getWorldPosition(vector1));
+    }
     return true;
   }
 }
