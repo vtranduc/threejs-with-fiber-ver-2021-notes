@@ -38,11 +38,15 @@ export class ScaleGizmo extends Gizmo {
     direction: THREE.Vector3;
     offset: number;
     startDistance: number;
+    // nightmare
+    center: THREE.Vector3;
   };
+  private simulatedGroups: THREE.Group[];
 
   constructor(util: GizmoUtil) {
     super(util);
     this.dimension = new THREE.Vector3();
+    this.simulatedGroups = [];
     this.scaleUtils = {
       vector: new THREE.Vector3(),
       size: new THREE.Vector3(),
@@ -55,6 +59,8 @@ export class ScaleGizmo extends Gizmo {
       direction: new THREE.Vector3(),
       startDistance: 0,
       offset: 0,
+      // test
+      center: new THREE.Vector3(),
     };
     this.diagLine3s = {
       [GizmoDiagonalAxis.XZ1]: new THREE.Line3(),
@@ -308,6 +314,31 @@ export class ScaleGizmo extends Gizmo {
       default:
         return false;
     }
+
+    if (!this.pivoted) {
+      // aa bb cc
+
+      // this.dragStart.offset =
+
+      const distance = vector
+        .subVectors(this.dragPoint, this.gizmoPosition)
+        .length();
+
+      // this.dragStart.offset =
+      //   distance - this.dimension[this.dragStart.axis] * 0.5;
+
+      if (this.dragStart.axis) {
+        this.dragStart.offset =
+          distance - this.dimension[this.dragStart.axis] * 0.5;
+
+        this.dragStart.startDistance = distance - this.dragStart.offset;
+
+        this.dragStart.center.copy(this.gizmoPosition);
+      }
+
+      return true;
+    }
+
     if (this.dragStart.axis) {
       direction.applyEuler(this.gizmoRotation);
       vector.setFromMatrixPosition(this.initialTransform);
@@ -341,6 +372,15 @@ export class ScaleGizmo extends Gizmo {
       (vector.subVectors(this.dragPoint, this.gizmoPosition).length() -
         offset) /
       startDistance;
+
+    if (!this.pivoted) {
+      console.log("scale: ", scalarScale);
+
+      // New logic here
+
+      return true;
+    }
+
     vector
       .copy(direction)
       .normalize()
@@ -355,26 +395,117 @@ export class ScaleGizmo extends Gizmo {
   }
 
   public setFromTarget(type?: GizmoUpdateType) {
-    if (type === GizmoUpdateType.Rotate) return true;
+    if (type === GizmoUpdateType.Rotate) return true; // No rotation allowed
     const { box3, vector, size, rotation } = this.scaleUtils;
-    rotation.copy(this.target.rotation);
-    this.target.rotation.set(0, 0, 0);
-    box3.setFromObject(this.target);
-    this.target.rotation.copy(rotation);
-    box3.getSize(size);
-    size.y *= 2;
-    if (size.toArray().some((val) => !val || !isFinite(val))) return false;
-    if (type === GizmoUpdateType.Drag) {
-      this.setDimension(size);
-      return true;
+
+    if (this.pivoted) {
+      // if (false) {
+      rotation.copy(this.target.rotation);
+      this.target.rotation.set(0, 0, 0);
+      box3.setFromObject(this.target);
+      this.target.rotation.copy(rotation);
+      box3.getSize(size);
+      size.y *= 2;
+      if (size.toArray().some((val) => !val || !isFinite(val))) return false;
+      if (type === GizmoUpdateType.Drag) {
+        this.setDimension(size);
+        return true;
+      }
+      box3.getCenter(vector);
+      vector.y = box3.min.y;
+      vector
+        .sub(this.target.position)
+        .applyEuler(rotation)
+        .add(this.target.position);
+      this.set(vector, this.target.rotation, size);
+
+      // const v1 = new THREE.Vector3();
+      // const v2 = new THREE.Vector3();
+      // const v3 = new THREE.Vector3();
+      // const v4 = new THREE.Vector3();
+      // const v5 = new THREE.Vector3();
+      // const v6 = new THREE.Vector3();
+
+      // const q1 = new THREE.Quaternion();
+      // const q2 = new THREE.Quaternion();
+      // const q3 = new THREE.Quaternion();
+      // const q4 = new THREE.Quaternion();
+      // const q5 = new THREE.Quaternion();
+      // const q6 = new THREE.Quaternion();
+
+      // const mx = new THREE.Matrix4().compose(
+      //   vector,
+      //   this.target.quaternion,
+      //   size
+      // );
+
+      // console.log("mx: ", vector);
+
+      // const parent = this.target.parent;
+
+      // if (parent) {
+      //   parent.updateMatrix();
+      //   parent.updateMatrixWorld();
+
+      //   const L2 = parent.matrix.clone().multiply(mx);
+
+      //   L2.decompose(v1, q1, v2);
+      // }
+    } else {
+      const parent = this.target.parent;
+      if (!parent) return false;
+      const numOfAncestors = this.setSimulatedGroup(this.target);
+      parent.remove(this.target);
+      this.simulatedGroups[0].add(this.target);
+      box3.setFromObject(this.simulatedGroups[numOfAncestors - 1]);
+      this.simulatedGroups[0].remove(this.target);
+      parent.add(this.target);
+      box3.getSize(size);
+      box3.getCenter(vector);
+      size.y *= 2;
+      vector.y = box3.min.y;
+      this.set(vector, this.scaleUtils.rotation.set(0, 0, 0), size);
     }
-    box3.getCenter(vector);
-    vector.y = box3.min.y;
-    vector
-      .sub(this.target.position)
-      .applyEuler(rotation)
-      .add(this.target.position);
-    this.set(vector, this.target.rotation, size);
     return true;
+  }
+
+  private setSimulatedGroup(object: THREE.Object3D, index = 0): number {
+    const parent = object.parent;
+    if (!parent) return index;
+
+    // let forgedParent: THREE.Group
+
+    // if (!this.simulatedGroups[index]) {
+
+    // }
+
+    // const forgedParent =
+    //   this.simulatedGroups[index] ||
+    //   function () {
+    //     const group = new THREE.Group();
+    //     this.simulatedGroups.push(group);
+    //     return group;
+    //   }.bind(this)();
+
+    let forgedParent = this.simulatedGroups[index];
+
+    if (!forgedParent) {
+      const group = new THREE.Group();
+      this.simulatedGroups.push(group);
+      if (index) group.add(this.simulatedGroups[index - 1]);
+      forgedParent = group;
+    }
+
+    parent.updateMatrix();
+
+    // console.log("show this: ", parent.matrix);
+
+    parent.matrix.decompose(
+      forgedParent.position,
+      forgedParent.quaternion,
+      forgedParent.scale
+    );
+
+    return this.setSimulatedGroup(parent, index + 1);
   }
 }

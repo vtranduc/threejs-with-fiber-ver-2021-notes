@@ -13,7 +13,9 @@ export abstract class Gizmo extends THREE.Group {
   public gizmoPosition: THREE.Vector3;
   public gizmoRotation: THREE.Euler;
   private line3s: Record<GizmoDirectionalAxis, THREE.Line3>;
+
   private planes: Record<GizmoPlanarAxis, THREE.Plane>;
+
   public dragPoint: THREE.Vector3;
   public axis: GizmoAxis;
   public initialTransform: THREE.Matrix4;
@@ -242,6 +244,14 @@ export abstract class Gizmo extends THREE.Group {
     return this.gizmoUtil.scaleFactor;
   }
 
+  public getPlaneNormal(axis: GizmoPlanarAxis, target: THREE.Vector3) {
+    target.copy(this.planes[axis].normal);
+  }
+
+  get pivoted() {
+    return this.gizmoUtil.pivoted;
+  }
+
   // For Gizmo's transform. Not to be used from within TransformControl class
 
   public set(
@@ -348,6 +358,7 @@ export class GizmoUtil {
   private raycaster = new THREE.Raycaster();
   private dracoLoader = new DRACOLoader();
   public scaleFactor: number;
+  public pivoted: boolean;
 
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
@@ -356,6 +367,7 @@ export class GizmoUtil {
     this.camera = camera;
     this.object = object;
     this.scaleFactor = 1;
+    this.pivoted = false;
     this.dracoLoader.setDecoderPath(
       "https://www.gstatic.com/draco/v1/decoders/"
     );
