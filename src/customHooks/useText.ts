@@ -1,16 +1,21 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import Shelter from "../fonts/Shelter_PersonalUseOnly_Regular.json";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import {
+  TextGeometry,
+  TextGeometryParameters,
+} from "three/examples/jsm/geometries/TextGeometry";
 
 export function useText(text: string, color: number) {
   const textOpts = useMemo(() => {
-    const loader = new THREE.FontLoader();
+    const loader = new FontLoader();
     const font = loader.parse(Shelter);
     return {
       font,
       size: 1,
       height: 0.1,
-    } as THREE.TextGeometryParameters;
+    } as TextGeometryParameters;
   }, []);
 
   const mesh = useMemo(() => {
@@ -27,7 +32,7 @@ export function useText(text: string, color: number) {
   }, [mesh, color]);
 
   useEffect(() => {
-    mesh.geometry = new THREE.TextGeometry(text, textOpts);
+    mesh.geometry = new TextGeometry(text, textOpts);
   }, [text, textOpts, mesh]);
 
   return mesh;

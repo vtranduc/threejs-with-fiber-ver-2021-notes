@@ -30,7 +30,11 @@ import {
 } from "@react-three/drei";
 import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import {
+  TextGeometry,
+  TextGeometryParameters,
+} from "three/examples/jsm/geometries/TextGeometry";
 import { ErrorBoundary } from "react-error-boundary";
 import axios from "axios";
 import {
@@ -433,11 +437,6 @@ function App() {
       line is identified, and it then draws the line from clicked point to the closest point on the line.\n`,
     },
     {
-      component: <SimpleVRButton />,
-      title: ``,
-      details: ``,
-    },
-    {
       component: <SimpleCustomGizmo />,
       title: ``,
       details: ``,
@@ -571,23 +570,6 @@ function SimpleCustomGizmo() {
       <primitive object={mesh3} />
     </>
   );
-}
-
-function SimpleVRButton() {
-  const { gl } = useThree();
-
-  useEffect(() => {
-    gl.xr.enabled = true;
-    return () => {
-      gl.xr.enabled = SCENE_CONSTANTS.xr;
-    };
-  }, [gl]);
-
-  const vrButton = useMemo(() => {
-    return VRButton.createButton(gl);
-  }, [gl]);
-
-  return null;
 }
 
 function SimpleLine() {
@@ -2561,20 +2543,22 @@ function SimpleNormal({ geometry }: { geometry?: Geometry }) {
 
 function SimpleText() {
   const mesh = useRef<THREE.Mesh>(new THREE.Mesh());
-  const loader = new THREE.FontLoader();
-  const font = loader.parse(Shelter);
-  const opts: THREE.TextGeometryParameters = {
-    font,
-    size: 1,
-    height: 0.1,
-  };
+  const textGeometry = useMemo(() => {
+    const loader = new FontLoader();
+    const font = loader.parse(Shelter);
+    const opts: TextGeometryParameters = {
+      font,
+      size: 1,
+      height: 0.1,
+    };
+    return new TextGeometry("Hello\nWorld", opts);
+  }, []);
   useEffect(() => {
     mesh.current.position.x = -1;
   }, [mesh]);
   useFrame(() => (mesh.current.rotation.y += 0.006));
   return (
-    <mesh ref={mesh}>
-      <textGeometry args={["Hello\nWorld", opts]} />
+    <mesh ref={mesh} geometry={textGeometry}>
       <meshBasicMaterial color={0x034b59} />
     </mesh>
   );
