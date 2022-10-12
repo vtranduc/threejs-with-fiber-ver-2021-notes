@@ -35,6 +35,7 @@ import {
   randomInRange,
   shuffleArray,
   NormalTracer,
+  NormalFresnelTracer,
 } from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
@@ -67,7 +68,7 @@ import {
   useMouseWheelConditionally,
   usePointerUp,
 } from "./customHooks";
-import { ArrowCode } from "./types";
+import { ArrowCode, CtrlCode, ActionCode, CharaActionKey } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
 import { ShadowEnabler } from "./components";
 import { Provider } from "react-redux";
@@ -113,30 +114,6 @@ enum AnimateSpotLight {
 enum AnimatePerspectiveCamera {
   Move = "MOVE",
   Fov = "FOV",
-}
-
-enum CtrlCode {
-  Right = "ControlRight",
-  Left = "ControlLeft",
-}
-
-enum ActionCode {
-  Enter = "Enter",
-  Backspace = "Backspace",
-  Space = "Space",
-}
-
-enum CharaActionKey {
-  J = "KeyJ",
-  K = "KeyK",
-  L = "KeyL",
-  U = "KeyU",
-  I = "KeyI",
-  O = "KeyO",
-  P = "KeyP",
-  R = "KeyR",
-  Semicolon = "Semicolon",
-  Quote = "Quote",
 }
 
 enum Fade {
@@ -457,6 +434,11 @@ function App() {
       title: ``,
       details: ``,
     },
+    {
+      component: <SimpleNormalTracer fresnel={true} />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -493,14 +475,18 @@ function App() {
 
 export default App;
 
-function SimpleNormalTracer() {
+function SimpleNormalTracer({ fresnel = false }) {
   const torus = useRef<THREE.Mesh>(new THREE.Mesh());
   const sphere = useRef<THREE.Mesh>(new THREE.Mesh());
 
   const [enabled, setEnabled] = useState<boolean>(true);
   const { camera } = useThree();
 
-  const tracer = useMemo(() => new NormalTracer(camera), [camera]);
+  const tracer = useMemo(
+    () =>
+      fresnel ? new NormalFresnelTracer(camera) : new NormalTracer(camera),
+    [camera, fresnel]
+  );
 
   const placeTracer = useCallback(
     (mouse: [number, number]) => {
@@ -570,9 +556,12 @@ function SimpleNormalTracer() {
   return (
     <>
       <primitive object={tracer} />
-      <mesh ref={torus} position={[3, 0, 0]}>
+      <mesh ref={torus} position={[fresnel ? -3 : 3, 0, 0]}>
         <torusGeometry args={[1, 0.5, 30, 50]} />
-        <meshPhongMaterial color={0x00ff00} shininess={100} />
+        <meshPhongMaterial
+          color={fresnel ? 0x00ff00 : 0x0000ff}
+          shininess={100}
+        />
       </mesh>
       <mesh ref={sphere}>
         <sphereGeometry args={[1, 30, 30]} />

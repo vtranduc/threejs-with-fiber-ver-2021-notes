@@ -17,6 +17,32 @@ export enum ArrowCode {
   Right = "ArrowRight",
 }
 
+export enum CtrlCode {
+  Right = "ControlRight",
+  Left = "ControlLeft",
+}
+
+export enum ActionCode {
+  Enter = "Enter",
+  Backspace = "Backspace",
+  Space = "Space",
+}
+
+export enum CharaActionKey {
+  J = "KeyJ",
+  K = "KeyK",
+  L = "KeyL",
+  U = "KeyU",
+  I = "KeyI",
+  O = "KeyO",
+  P = "KeyP",
+  R = "KeyR",
+  Semicolon = "Semicolon",
+  Quote = "Quote",
+}
+
+export type KeyCode = ArrowCode | CtrlCode | ActionCode | CharaActionKey;
+
 export enum Compass {
   N = "N",
   E = "E",

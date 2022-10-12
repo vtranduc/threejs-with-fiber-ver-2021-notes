@@ -5,6 +5,7 @@ import { SCENE_CONSTANTS } from "../constants";
 
 export * from "./gizmo";
 export * from "./normalTracer";
+export * from "./normalFresnelTracer";
 
 export function hexToRgb(hex: number) {
   return hexStrToRgb(hexNumToStr(hex));
