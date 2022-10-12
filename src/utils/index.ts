@@ -4,6 +4,7 @@ import { Compass } from "../types";
 import { SCENE_CONSTANTS } from "../constants";
 
 export * from "./gizmo";
+export * from "./normalTracer";
 
 export function hexToRgb(hex: number) {
   return hexStrToRgb(hexNumToStr(hex));
@@ -141,8 +142,12 @@ export function mapCompassVector3(compass: Compass) {
 }
 
 export function getSceneMouseCoord(e: MouseEvent) {
+  return getSceneMouseCoordFromClient([e.clientX, e.clientY]);
+}
+
+export function getSceneMouseCoordFromClient(client: [number, number]) {
   return [
-    ((e.clientX - SCENE_CONSTANTS.left) / SCENE_CONSTANTS.width) * 2 - 1,
-    -((e.clientY - SCENE_CONSTANTS.top) / SCENE_CONSTANTS.height) * 2 + 1,
+    ((client[0] - SCENE_CONSTANTS.left) / SCENE_CONSTANTS.width) * 2 - 1,
+    -((client[1] - SCENE_CONSTANTS.top) / SCENE_CONSTANTS.height) * 2 + 1,
   ] as [number, number];
 }

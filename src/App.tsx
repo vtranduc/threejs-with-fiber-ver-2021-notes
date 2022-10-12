@@ -28,7 +28,14 @@ import {
   OrthographicCamera,
   useHelper,
 } from "@react-three/drei";
-import { hexToRgb, rgbToHex, atan, randomInRange, shuffleArray } from "./utils";
+import {
+  hexToRgb,
+  rgbToHex,
+  atan,
+  randomInRange,
+  shuffleArray,
+  NormalTracer,
+} from "./utils";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import {
@@ -55,6 +62,10 @@ import {
   useMouseMove,
   useClickHandler,
   useGizmoControl,
+  usePointerDown,
+  usePointerMoveConditionally,
+  useMouseWheelConditionally,
+  usePointerUp,
 } from "./customHooks";
 import { ArrowCode } from "./types";
 import { SCENE_CONSTANTS } from "./constants";
@@ -441,6 +452,11 @@ function App() {
       title: ``,
       details: ``,
     },
+    {
+      component: <SimpleNormalTracer />,
+      title: ``,
+      details: ``,
+    },
   ];
 
   const pages = sceneChapters.length;
@@ -476,6 +492,97 @@ function App() {
 }
 
 export default App;
+
+function SimpleNormalTracer() {
+  const torus = useRef<THREE.Mesh>(new THREE.Mesh());
+  const sphere = useRef<THREE.Mesh>(new THREE.Mesh());
+
+  const [enabled, setEnabled] = useState<boolean>(true);
+  const { camera } = useThree();
+
+  const tracer = useMemo(() => new NormalTracer(camera), [camera]);
+
+  const placeTracer = useCallback(
+    (mouse: [number, number]) => {
+      tracer.visible = tracer.placeOnIntersectedSurface(mouse, [
+        torus.current,
+        sphere.current,
+      ]);
+    },
+    [tracer, torus, sphere]
+  );
+
+  usePointerMoveConditionally(placeTracer, enabled);
+  useMouseWheelConditionally(placeTracer, enabled);
+
+  usePointerDown(() => {
+    setEnabled(false);
+    tracer.visible = false;
+  });
+
+  usePointerUp((mouse) => {
+    setEnabled(true);
+    placeTracer(mouse);
+  });
+
+  // Commands
+
+  // Color change command
+
+  const colors = useMemo(() => [0xfefefe, 0x000000, 0xff0000, 0x00ff00], []);
+
+  const [colorKey, setColorKey] = useState<number>(0);
+
+  const changeColor = useCallback(() => {
+    const nextKey = (colorKey + 1) % colors.length;
+    setColorKey(nextKey);
+    tracer.color = colors[nextKey];
+  }, [colorKey, colors, tracer]);
+
+  useKeyHandler(ActionCode.Space, changeColor);
+
+  // Rim color change command
+
+  const [rimColorKey, setRimColorKey] = useState<number>(0);
+
+  const changeRimColor = useCallback(() => {
+    const nextKey = (rimColorKey + 1) % colors.length;
+    setRimColorKey(nextKey);
+    tracer.rimColor = colors[nextKey];
+  }, [rimColorKey, colors, tracer]);
+
+  useKeyHandler(ActionCode.Enter, changeRimColor);
+
+  // Size change command
+
+  const increaseSize = useCallback(() => (tracer.size += 1), [tracer]);
+  const decreaseSize = useCallback(() => (tracer.size -= 1), [tracer]);
+  useKeyHandler(ArrowCode.Up, increaseSize);
+  useKeyHandler(ArrowCode.Down, decreaseSize);
+
+  // Opacity change command
+
+  const increaseOpacity = useCallback(() => (tracer.opacity += 0.1), [tracer]);
+  const decreaseOpacity = useCallback(() => (tracer.opacity -= 0.1), [tracer]);
+  useKeyHandler(ArrowCode.Right, increaseOpacity);
+  useKeyHandler(ArrowCode.Left, decreaseOpacity);
+
+  return (
+    <>
+      <primitive object={tracer} />
+      <mesh ref={torus} position={[3, 0, 0]}>
+        <torusGeometry args={[1, 0.5, 30, 50]} />
+        <meshPhongMaterial color={0x00ff00} shininess={100} />
+      </mesh>
+      <mesh ref={sphere}>
+        <sphereGeometry args={[1, 30, 30]} />
+        <meshPhongMaterial color={0xffff00} shininess={100} />
+      </mesh>
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[5, 10, 15]} />
+    </>
+  );
+}
 
 function SimpleCustomGizmo() {
   const { scene, setTarget: setControlTarget, uuid } = useGizmoControl();
